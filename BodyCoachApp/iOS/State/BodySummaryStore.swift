@@ -1,6 +1,7 @@
 import BodyCoachCore
 import Foundation
 import Observation
+import WatchConnectivity
 
 @MainActor
 @Observable
@@ -19,6 +20,19 @@ final class BodySummaryStore {
     private(set) var latestSubjectiveCheckIn: WatchSubjectiveCheckInPayload?
     var currentGoal: UserGoal? {
         persistenceStore?.currentGoal
+    }
+    var watchSyncDiagnostics: WatchSyncDiagnostics {
+        WatchSyncDiagnostics(
+            activationState: watchSyncService.activationState.displayName,
+            isReachable: watchSyncService.isReachable,
+            isCounterpartInstalled: watchSyncService.isCounterpartAppInstalled,
+            lastEvent: watchSyncService.lastSyncEvent,
+            lastError: watchSyncService.lastSyncError,
+            lastReceivedAt: watchSyncService.lastReceivedAt,
+            lastCheckInSentAt: watchSyncService.lastCheckInSentAt,
+            lastCheckInReceivedAt: watchSyncService.lastCheckInReceivedAt,
+            lastCheckInAcknowledgedAt: watchSyncService.lastCheckInAcknowledgedAt
+        )
     }
 
     init(
@@ -140,6 +154,17 @@ final class BodySummaryStore {
         sendWatchSummary()
     }
 
+    func saveSubjectiveCheckIn(stress: Int, fatigue: Int, hunger: Int, source: String = "iPhone") {
+        handleSubjectiveCheckIn(
+            WatchSubjectiveCheckInPayload(
+                stress: stress,
+                fatigue: fatigue,
+                hunger: hunger,
+                source: source
+            )
+        )
+    }
+
     private func sendWatchSummary(updatedAt: Date = Date()) {
         watchSyncService.send(
             WatchSummaryPayload(
@@ -192,6 +217,33 @@ enum BodySummaryDataSource: Equatable, Sendable {
             return "模拟数据"
         case .healthKit:
             return "Apple 健康"
+        }
+    }
+}
+
+struct WatchSyncDiagnostics: Equatable {
+    var activationState: String
+    var isReachable: Bool
+    var isCounterpartInstalled: Bool
+    var lastEvent: String
+    var lastError: String?
+    var lastReceivedAt: Date?
+    var lastCheckInSentAt: Date?
+    var lastCheckInReceivedAt: Date?
+    var lastCheckInAcknowledgedAt: Date?
+}
+
+private extension WCSessionActivationState {
+    var displayName: String {
+        switch self {
+        case .notActivated:
+            return "未激活"
+        case .inactive:
+            return "非活跃"
+        case .activated:
+            return "已激活"
+        @unknown default:
+            return "未知"
         }
     }
 }

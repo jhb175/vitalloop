@@ -5,7 +5,7 @@ This folder is the static website for App Store review materials.
 Expected privacy policy URL after GitHub Pages is enabled:
 
 ```text
-https://ramsey-ux.github.io/vitalloop/privacy-policy.html
+https://jhb175.github.io/vitalloop/privacy-policy.html
 ```
 
 If your GitHub username or repository name is different, update:

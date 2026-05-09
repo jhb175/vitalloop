@@ -10,12 +10,14 @@ final class BodyCoachPersistenceStore {
 
     private(set) var latestSubjectiveCheckIn: WatchSubjectiveCheckInPayload?
     private(set) var currentGoal: UserGoal?
+    private(set) var recentDailySummaries: [DailySummaryRecord] = []
     private(set) var lastPersistenceError: String?
 
     func configure(modelContext: ModelContext) {
         self.modelContext = modelContext
         loadCurrentGoal()
         loadLatestSubjectiveCheckIn()
+        loadRecentDailySummaries()
     }
 
     func saveFatLossGoal(
@@ -134,6 +136,7 @@ final class BodyCoachPersistenceStore {
             record.dataCompleteness = summary.score.dataCompleteness
 
             try modelContext.save()
+            recentDailySummaries = try recentDailySummaryRecords(limit: 14)
             lastPersistenceError = nil
         } catch {
             lastPersistenceError = error.localizedDescription
@@ -158,6 +161,15 @@ final class BodyCoachPersistenceStore {
         }
     }
 
+    func loadRecentDailySummaries(limit: Int = 14) {
+        do {
+            recentDailySummaries = try recentDailySummaryRecords(limit: limit)
+            lastPersistenceError = nil
+        } catch {
+            lastPersistenceError = error.localizedDescription
+        }
+    }
+
     func deleteLocalData() {
         guard let modelContext else {
             lastPersistenceError = "本地存储尚未就绪"
@@ -172,6 +184,7 @@ final class BodyCoachPersistenceStore {
             try modelContext.save()
             latestSubjectiveCheckIn = nil
             currentGoal = nil
+            recentDailySummaries = []
             lastPersistenceError = nil
         } catch {
             lastPersistenceError = error.localizedDescription
@@ -222,6 +235,18 @@ final class BodyCoachPersistenceStore {
         )
         descriptor.fetchLimit = 1
         return try modelContext.fetch(descriptor).first
+    }
+
+    private func recentDailySummaryRecords(limit: Int) throws -> [DailySummaryRecord] {
+        guard let modelContext else {
+            return []
+        }
+
+        var descriptor = FetchDescriptor<DailySummaryRecord>(
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        descriptor.fetchLimit = limit
+        return try modelContext.fetch(descriptor)
     }
 }
 

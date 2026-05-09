@@ -1,6 +1,6 @@
 # VitalLoop 下一阶段开发计划
 
-更新时间：2026-05-09 16:55
+更新时间：2026-05-09 19:12
 
 ## 当前状态
 
@@ -15,6 +15,8 @@
 - 模拟数据到 UI 的完整展示链路
 
 当前已经接入 HealthKit 读取骨架、个人基线、趋势展示、体重异常过滤、WatchConnectivity 今日摘要同步、Watch 快速记录回传、SwiftData 本地存储、减脂目标管理和每日摘要落库。
+
+最新进展：已接入 VitalLoop AppIcon 资源，iPhone 与 Watch 使用独立 asset catalog；计划页已新增目标进度、7 日复盘和目标调整建议；趋势页已接入本地每日摘要历史；已修正 Watch app 嵌入 iPhone target 的工程配置，并完成配对模拟器 WatchConnectivity 烟测。
 
 ## 下一阶段目标
 
@@ -43,11 +45,13 @@
 - iPhone 首页接入 `VitalLoopWordmark`
 - Watch 顶部接入 `VitalLoopLogoMark`
 - Xcode `CFBundleDisplayName` 改为 `VitalLoop`
+- 已创建 iOS `Assets.xcassets/AppIcon.appiconset`
+- 已创建 watchOS `WatchAssets.xcassets/AppIcon.appiconset`
+- 已用当前 VitalLoop SVG 导出 1024px 和平台所需小尺寸 PNG
+- Xcode 已配置 iPhone / Watch target 的 `ASSETCATALOG_COMPILER_APPICON_NAME`
 
 待补：
 
-- 创建正式 AppIcon asset catalog。
-- 用当前 SVG 导出 1024px PNG 图标。
 - 添加 light / dark small-size logo QA。
 
 ## Phase 2：HealthKit 数据层
@@ -138,8 +142,12 @@
 - `UserGoal` 已接入 SwiftData 读写，App 启动后会恢复最近一次目标。
 - `DailySummaryRecord` 已接入 SwiftData 写入，今日评分刷新后会按日期覆盖保存本地摘要。
 - 减脂目标已传入 `BodyCoachCore`，会影响解释、运动建议时长和目标节奏建议。
+- `BodyCoachPersistenceStore` 已暴露最近 14 天 `DailySummaryRecord`，供计划页和后续趋势页使用。
+- 计划页已新增目标进度条、当前/目标/剩余体重卡、7 日复盘柱状图、均分/恢复/可信度统计。
+- 计划页已新增目标调整建议，会根据目标节奏、近 7 日恢复和评分判断“可维持 / 先恢复 / 偏激进 / 缺体重”。
+- 趋势页已从占位页改为真实历史页，使用本地 `DailySummaryRecord` 展示 14 日综合分趋势、四个维度趋势和最近摘要列表。
 - 已新增 GitHub Pages 静态站点文件 `site/privacy-policy.html`、`site/.nojekyll` 和发布 workflow。
-- App 设置页已接入预期隐私政策 URL：`https://ramsey-ux.github.io/vitalloop/privacy-policy.html`。
+- App 设置页已接入预期隐私政策 URL：`https://jhb175.github.io/vitalloop/privacy-policy.html`。
 - 已新增 `.gitignore`，排除 macOS `._*` 和 `.DS_Store` 元数据文件，避免影响 Pages 发布。
 
 待补：
@@ -193,6 +201,8 @@
 
 - 已新增 `WatchSyncPayload`，用于同步今日摘要、状态、指标、趋势和建议。
 - 已新增 `WatchSyncService`，封装 `WCSession` 激活、`applicationContext` 后台同步和可达时即时消息。
+- `BodyCoachApp` target 已新增 `Embed Watch Content`，会构建并嵌入 `BodyCoachWatch.app`。
+- Watch Info.plist 已明确 `WKCompanionAppBundleIdentifier = com.ramsey.bodycoach` 和 `WKWatchOnly = false`。
 - iPhone `BodySummaryStore` 会在 HealthKit 刷新成功、部分数据、无数据或回退模拟数据后推送摘要。
 - Watch `WatchSummaryStore` 会接收最近一次摘要；没有收到同步时使用 sample fallback。
 - Watch 数据总览和今日任务已从同步 payload 读取数据，不再只显示固定模拟内容。
@@ -202,11 +212,14 @@
 - iPhone 已将 Watch 主观记录写入本地 SwiftData，并在启动时恢复最近一次记录。
 - iPhone 会用 Watch 主观记录刷新评分和同步摘要。
 - 当前只同步摘要层数据，不同步原始 HealthKit 明细。
+- iPhone 设置页已新增 Watch 同步诊断，展示 `WCSession` 激活状态、Watch app 安装状态、可达状态、最近事件和错误。
+- Watch 首页右上角会显示最近同步时间，未收到摘要时显示同步事件 / 等待状态。
+- 配对模拟器已完成烟测：iPhone 端从 `WatchAppNotInstalled` 修正为 `appInstalled: YES`，两端可达后 `sendMessage` 成功，Watch 首页显示同步时间 `19:08`，综合分显示 iPhone 摘要的 `77`。
 
 待补：
 
-- 真机或配对模拟器验证实时同步。
 - 同步失败、过期摘要和离线状态的 UI 文案细化。
+- 真机验证 Watch 快速记录回传 iPhone 的完整闭环。
 
 ## Phase 6：UI 验收与迭代
 
@@ -226,9 +239,8 @@ Watch 验收点：
 
 ## 近期执行顺序
 
-1. 推送到 GitHub 并启用 Pages，确认隐私政策公网 URL 可访问。
+1. 做真机同步验收，重点验证 Watch 快速记录回传 iPhone。
 2. 准备 App Store 隐私材料和正式联系邮箱。
-3. 做配对模拟器或真机同步验收。
-4. 创建 AppIcon asset catalog，并接入当前 VitalLoop logo。
-5. 增强计划页：目标进度图、每周复盘和目标调整建议。
-6. 将 `DailySummaryRecord` 历史接入趋势页。
+3. 推送到 GitHub 并启用 Pages，确认隐私政策公网 URL 可访问。
+4. 添加 light / dark small-size logo QA。
+5. 记录页开发：压力、疲劳、饥饿和饮食简记。

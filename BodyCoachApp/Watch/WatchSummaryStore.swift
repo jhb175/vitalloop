@@ -22,6 +22,18 @@ final class WatchSummaryStore {
         syncService.latestPayload != nil
     }
 
+    var syncStatusLabel: String {
+        if let lastReceivedAt {
+            return lastReceivedAt.formatted(date: .omitted, time: .shortened)
+        }
+
+        if syncService.isCounterpartAppInstalled {
+            return syncService.lastSyncEvent
+        }
+
+        return "等待 iPhone"
+    }
+
     var latestCheckIn: WatchSubjectiveCheckInPayload? {
         syncService.latestCheckIn
     }

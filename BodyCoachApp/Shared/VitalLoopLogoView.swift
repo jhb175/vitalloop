@@ -4,51 +4,60 @@ struct VitalLoopLogoMark: View {
     var showBackground = true
 
     var body: some View {
-        ZStack {
-            if showBackground {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.vlBase)
+        GeometryReader { proxy in
+            let size = min(proxy.size.width, proxy.size.height)
+            let outerSize = size * 0.89
+            let innerSize = size * 0.6
+            let coreSize = size * 0.33
+
+            ZStack {
+                if showBackground {
+                    RoundedRectangle(cornerRadius: size * 0.32, style: .continuous)
+                        .fill(Color.vlBase)
+                }
+
+                Circle()
+                    .stroke(Color.vlRingBase, lineWidth: size * 0.125)
+                    .frame(width: outerSize, height: outerSize)
+                Circle()
+                    .trim(from: 0.04, to: 0.77)
+                    .stroke(
+                        LinearGradient(colors: [.vlMint, .vlBlue, .vlViolet], startPoint: .bottomLeading, endPoint: .topTrailing),
+                        style: StrokeStyle(lineWidth: size * 0.125, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(18))
+                    .frame(width: outerSize, height: outerSize)
+
+                Circle()
+                    .stroke(Color.vlInnerBase, lineWidth: size * 0.083)
+                    .frame(width: innerSize, height: innerSize)
+                Circle()
+                    .trim(from: 0.08, to: 0.64)
+                    .stroke(
+                        LinearGradient(colors: [.vlBlue, .vlViolet], startPoint: .leading, endPoint: .trailing),
+                        style: StrokeStyle(lineWidth: size * 0.083, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(136))
+                    .frame(width: innerSize, height: innerSize)
+
+                Circle()
+                    .stroke(Color.vlCoreBase, lineWidth: size * 0.056)
+                    .frame(width: coreSize, height: coreSize)
+                Circle()
+                    .trim(from: 0.1, to: 0.58)
+                    .stroke(
+                        LinearGradient(colors: [.vlWarm, .vlMint], startPoint: .topLeading, endPoint: .bottomTrailing),
+                        style: StrokeStyle(lineWidth: size * 0.056, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-28))
+                    .frame(width: coreSize, height: coreSize)
+
+                Circle()
+                    .fill(Color.vlMint.opacity(0.18))
+                    .frame(width: size * 0.11, height: size * 0.11)
             }
-
-            Circle()
-                .stroke(Color.vlRingBase, lineWidth: 9)
-                .frame(width: 64, height: 64)
-            Circle()
-                .trim(from: 0.04, to: 0.77)
-                .stroke(
-                    LinearGradient(colors: [.vlMint, .vlBlue, .vlViolet], startPoint: .bottomLeading, endPoint: .topTrailing),
-                    style: StrokeStyle(lineWidth: 9, lineCap: .round)
-                )
-                .rotationEffect(.degrees(18))
-                .frame(width: 64, height: 64)
-
-            Circle()
-                .stroke(Color.vlInnerBase, lineWidth: 6)
-                .frame(width: 43, height: 43)
-            Circle()
-                .trim(from: 0.08, to: 0.64)
-                .stroke(
-                    LinearGradient(colors: [.vlBlue, .vlViolet], startPoint: .leading, endPoint: .trailing),
-                    style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                )
-                .rotationEffect(.degrees(136))
-                .frame(width: 43, height: 43)
-
-            Circle()
-                .stroke(Color.vlCoreBase, lineWidth: 4)
-                .frame(width: 24, height: 24)
-            Circle()
-                .trim(from: 0.1, to: 0.58)
-                .stroke(
-                    LinearGradient(colors: [.vlWarm, .vlMint], startPoint: .topLeading, endPoint: .bottomTrailing),
-                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-28))
-                .frame(width: 24, height: 24)
-
-            Circle()
-                .fill(Color.vlMint.opacity(0.18))
-                .frame(width: 8, height: 8)
+            .frame(width: size, height: size)
+            .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityLabel("VitalLoop")

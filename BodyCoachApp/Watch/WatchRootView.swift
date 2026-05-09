@@ -5,19 +5,17 @@ struct WatchRootView: View {
     let store: WatchSummaryStore
 
     var body: some View {
-        TabView {
-            WatchDashboardPage(payload: store.payload, usesLiveSync: store.usesLiveSync, lastReceivedAt: store.lastReceivedAt)
-            WatchTaskPage(recommendations: store.payload.recommendations)
-            WatchQuickLogPage(store: store)
-        }
+        WatchDashboardPage(store: store)
         .background(WatchBackground())
     }
 }
 
 private struct WatchDashboardPage: View {
-    let payload: WatchSummaryPayload
-    let usesLiveSync: Bool
-    let lastReceivedAt: Date?
+    let store: WatchSummaryStore
+
+    private var payload: WatchSummaryPayload {
+        store.payload
+    }
 
     var body: some View {
         ScrollView {
@@ -26,36 +24,39 @@ private struct WatchDashboardPage: View {
 
                 WatchHeroStrip(score: payload.score, headline: payload.headline, detail: payload.detail)
 
-                HStack(spacing: 8) {
+                WatchQuickLogShortcut(store: store)
+
+                HStack(spacing: 7) {
                     metricCard(for: .heartRate)
                     metricCard(for: .activeEnergy)
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: 7) {
                     metricCard(for: .sleep)
                     metricCard(for: .hrv)
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: 7) {
                     metricCard(for: .steps)
                     metricCard(for: .weight)
                 }
 
-                WatchActionBar(title: "下一步", detail: payload.recommendations.first?.title ?? "打开 iPhone 完成今日同步")
+                WatchInlineQuickLog(store: store)
+
+                WatchRecommendationStack(recommendations: payload.recommendations)
             }
-            .padding(.horizontal, 10)
-            .padding(.top, 8)
-            .padding(.bottom, 18)
+            .padding(.horizontal, 9)
+            .padding(.top, 6)
+            .padding(.bottom, 26)
         }
     }
 
     private var syncLabel: String {
-        guard usesLiveSync else {
-            return "预览"
+        guard store.usesLiveSync else {
+            return store.syncStatusLabel
         }
 
-        let date = lastReceivedAt ?? payload.updatedAt
-        return date.formatted(date: .omitted, time: .shortened)
+        return store.syncStatusLabel
     }
 
     private func metricCard(for kind: WatchMetricKind) -> WatchMetricCard {
@@ -89,45 +90,100 @@ private struct WatchDashboardPage: View {
     }
 }
 
-private struct WatchTaskPage: View {
+private struct WatchRecommendationStack: View {
     let recommendations: [WatchRecommendationPayload]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                WatchHeader(title: "今日任务", subtitle: "优先 3 项")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("今日任务")
+                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                Spacer()
+                Text("优先 3 项")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.watchSoft)
+            }
 
-                ForEach(recommendations.prefix(3), id: \.title) { recommendation in
-                    WatchGlassCard(cornerRadius: 20, padding: 10) {
-                        HStack(spacing: 9) {
-                            Image(systemName: recommendation.type.symbolName)
-                                .font(.system(size: 14, weight: .bold))
+            ForEach(recommendations.prefix(3), id: \.title) { recommendation in
+                WatchGlassCard(cornerRadius: 19, padding: 9) {
+                    HStack(spacing: 8) {
+                        Image(systemName: recommendation.type.symbolName)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 28, height: 28)
+                            .background(Color.white.opacity(0.14), in: Circle())
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(recommendation.title)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white)
-                                .frame(width: 30, height: 30)
-                                .background(Color.white.opacity(0.14), in: Circle())
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(recommendation.title)
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
-                                Text(recommendation.rationale)
-                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(Color.watchSoft)
-                                    .lineLimit(2)
-                            }
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            Text(recommendation.rationale)
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Color.watchSoft)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.top, 8)
-            .padding(.bottom, 18)
         }
     }
 }
 
-private struct WatchQuickLogPage: View {
+private struct WatchQuickLogShortcut: View {
+    let store: WatchSummaryStore
+
+    var body: some View {
+        Button {
+            store.sendCheckIn(stress: 5, fatigue: 4, hunger: 6)
+        } label: {
+            WatchGlassCard(cornerRadius: 18, padding: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .heavy))
+                        .foregroundStyle(.black)
+                        .frame(width: 28, height: 28)
+                        .background(Color.watchMint, in: Circle())
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("快速记录")
+                            .font(.system(size: 13, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        Text("压力 5 · 疲劳 4 · 饥饿 6")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.watchSoft)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+
+                    Spacer(minLength: 4)
+
+                    Text(statusText)
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.watchMint)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("快速记录压力五疲劳四饥饿六")
+    }
+
+    private var statusText: String {
+        guard let sentAt = store.lastCheckInSentAt else {
+            return "保存"
+        }
+
+        return sentAt.formatted(date: .omitted, time: .shortened)
+    }
+}
+
+private struct WatchInlineQuickLog: View {
     let store: WatchSummaryStore
 
     @State private var stress = 5.0
@@ -135,9 +191,30 @@ private struct WatchQuickLogPage: View {
     @State private var hunger = 6.0
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                WatchHeader(title: "快速记录", subtitle: "30 秒补充主观数据", syncLabel: syncLabel)
+        WatchGlassCard(cornerRadius: 22, padding: 10) {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("快速记录")
+                            .font(.system(size: 15, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text(syncLabel)
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.watchSoft)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 6)
+
+                    Text(latestSummary)
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.watchMint)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Color.watchMint.opacity(0.13), in: Capsule())
+                }
 
                 QuickLogRow(title: "压力", value: $stress, color: .watchRose)
                 QuickLogRow(title: "疲劳", value: $fatigue, color: .watchAmber)
@@ -150,9 +227,6 @@ private struct WatchQuickLogPage: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 10)
-            .padding(.top, 8)
-            .padding(.bottom, 18)
         }
     }
 
@@ -170,10 +244,14 @@ private struct WatchQuickLogPage: View {
 
     private var syncLabel: String {
         guard let sentAt = store.lastCheckInSentAt else {
-            return "未保存"
+            return "记录后会同步到 iPhone"
         }
 
-        return sentAt.formatted(date: .omitted, time: .shortened)
+        return "已保存 \(sentAt.formatted(date: .omitted, time: .shortened))"
+    }
+
+    private var latestSummary: String {
+        store.latestCheckIn?.statusLabel ?? "30 秒"
     }
 
     private var actionTitle: String {
@@ -191,28 +269,43 @@ private struct WatchHeader: View {
     var syncLabel: String = "同步"
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                VitalLoopLogoMark(showBackground: false)
-                    .frame(width: 22, height: 22)
-                Text("VitalLoop")
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white)
-                Spacer()
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .center, spacing: 5) {
+                HStack(spacing: 4) {
+                    VitalLoopLogoMark(showBackground: false)
+                        .frame(width: 16, height: 16)
+                    Text("VitalLoop")
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                }
+                .layoutPriority(1)
+
+                Text(subtitle)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.watchMint)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Color.watchMint.opacity(0.12), in: Capsule())
+
+                Spacer(minLength: 4)
+
                 Text(syncLabel)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.watchSoft)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.64)
+                    .frame(maxWidth: 48, alignment: .trailing)
             }
 
-            Text(subtitle)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.watchMint)
-
             Text(title)
-                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                .font(.system(size: 25, weight: .heavy, design: .rounded))
                 .foregroundStyle(.white)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.72)
         }
     }
 }
@@ -223,37 +316,40 @@ private struct WatchHeroStrip: View {
     let detail: String
 
     var body: some View {
-        WatchGlassCard(cornerRadius: 22, padding: 11) {
-            HStack(spacing: 10) {
+        WatchGlassCard(cornerRadius: 24, padding: 10) {
+            HStack(alignment: .center, spacing: 9) {
                 ZStack {
                     Circle()
-                        .stroke(Color.white.opacity(0.1), lineWidth: 8)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 7)
                     Circle()
                         .trim(from: 0, to: CGFloat(score) / 100)
-                        .stroke(Color.watchMint, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        .stroke(Color.watchMint, style: StrokeStyle(lineWidth: 7, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                    VStack(spacing: -2) {
+                    VStack(spacing: -1) {
                         Text("\(score)")
-                            .font(.system(size: 25, weight: .heavy, design: .rounded))
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
                             .foregroundStyle(.white)
                         Text("分")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
                             .foregroundStyle(Color.watchSoft)
                     }
                 }
-                .frame(width: 66, height: 66)
+                .frame(width: 58, height: 58)
+                .layoutPriority(1)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(headline)
-                        .font(.system(size: 18, weight: .heavy, design: .rounded))
+                        .font(.system(size: 16, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
                         .lineLimit(2)
-                        .minimumScaleFactor(0.76)
+                        .minimumScaleFactor(0.68)
                     Text(detail)
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.watchSoft)
                         .lineLimit(2)
+                        .minimumScaleFactor(0.74)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -267,25 +363,28 @@ private struct WatchMetricCard: View {
     let bars: [Double]
 
     var body: some View {
-        WatchGlassCard(cornerRadius: 20, padding: 9) {
-            VStack(alignment: .leading, spacing: 6) {
+        WatchGlassCard(cornerRadius: 18, padding: 8) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(title)
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.watchSoft)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
 
                 WatchMiniBars(values: bars, color: color)
-                    .frame(height: 25)
+                    .frame(height: 22)
 
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text(value)
-                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                        .font(.system(size: 19, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .minimumScaleFactor(0.62)
                     Text(unit)
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
                         .foregroundStyle(color)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -298,22 +397,23 @@ private struct WatchActionBar: View {
     let detail: String
 
     var body: some View {
-        WatchGlassCard(cornerRadius: 22, padding: 11) {
-            HStack(spacing: 10) {
+        WatchGlassCard(cornerRadius: 20, padding: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 14, weight: .heavy))
+                    .font(.system(size: 13, weight: .heavy))
                     .foregroundStyle(.black)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 29, height: 29)
                     .background(Color.watchMint, in: Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.watchSoft)
                     Text(detail)
-                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.72)
                 }
                 Spacer()
             }
@@ -327,18 +427,18 @@ private struct QuickLogRow: View {
     let color: Color
 
     var body: some View {
-        WatchGlassCard(cornerRadius: 20, padding: 11) {
-            VStack(alignment: .leading, spacing: 8) {
+        WatchGlassCard(cornerRadius: 19, padding: 10) {
+            VStack(alignment: .leading, spacing: 7) {
                 HStack {
                     Text(title)
-                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
                     Spacer()
                     Text("\(Int(value.rounded())) / 10")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundStyle(color)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(color.opacity(0.13), in: Capsule())
                 }
 
@@ -356,11 +456,11 @@ private struct WatchMiniBars: View {
 
     var body: some View {
         GeometryReader { proxy in
-            HStack(alignment: .bottom, spacing: 3) {
+            HStack(alignment: .bottom, spacing: 2) {
                 ForEach(Array(values.enumerated()), id: \.offset) { _, value in
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
                         .fill(color)
-                        .frame(width: max(5, (proxy.size.width - 12) / CGFloat(values.count)), height: max(8, proxy.size.height * value))
+                        .frame(width: max(4, (proxy.size.width - 10) / CGFloat(values.count)), height: max(7, proxy.size.height * value))
                 }
             }
             .frame(maxHeight: .infinity, alignment: .bottom)
