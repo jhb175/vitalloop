@@ -1,0 +1,25 @@
+._*
+.DS_Store
+**/._*
+**/.DS_Store
+
+# Xcode / Swift build output
+.build/
+**/.build/
+.swiftpm/
+**/.swiftpm/
+DerivedData/
+**/DerivedData/
+*.xcuserstate
+xcuserdata/
+**/xcuserdata/
+
+# Swift / Clang module caches
+.clang-module-cache/
+**/.clang-module-cache/
+ModuleCache.noindex/
+**/ModuleCache.noindex/
+
+# Logs and test results
+*.xcresult/
+*.log

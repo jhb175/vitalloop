@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Body Coach Watch UI V1</title>
+    <style>
+      :root {
+        --font:
+          Inter, "SF Pro Display", "SF Pro Text", -apple-system,
+          BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+        --text: #f7f9fa;
+        --soft: #dde3ea;
+        --muted: #bac1cc;
+        --dim: #9ba5b2;
+        --green: #8fe8c2;
+        --blue: #62c5ff;
+        --orange: #ffc078;
+        --purple: #d0ccff;
+        --screen:
+          radial-gradient(circle at 18% 8%, rgba(143,232,194,.12), transparent 26%),
+          radial-gradient(circle at 90% 12%, rgba(98,197,255,.11), transparent 28%),
+          linear-gradient(180deg, #111821 0%, #05070a 46%, #010203 100%);
+        --glass: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.055));
+        --glass-strong: linear-gradient(180deg, rgba(255,255,255,.21), rgba(255,255,255,.07));
+        --line: rgba(255,255,255,.13);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font);
+        color: #101217;
+        background:
+          radial-gradient(circle at 14% -5%, rgba(143,232,194,.2), transparent 30%),
+          radial-gradient(circle at 92% 0%, rgba(98,197,255,.18), transparent 34%),
+          linear-gradient(135deg, #f6f8f8, #e5ecee);
+      }
+
+      .page {
+        width: min(1900px, 100%);
+        margin: 0 auto;
+        padding: 38px 38px 58px;
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 24px;
+        margin-bottom: 34px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 42px;
+        line-height: 1.04;
+        font-weight: 780;
+      }
+
+      .head p {
+        margin: 12px 0 0;
+        max-width: 900px;
+        color: #4d5967;
+        font-size: 18px;
+        line-height: 1.55;
+        font-weight: 560;
+      }
+
+      .badge {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.65);
+        border: 1px solid rgba(255,255,255,.8);
+        color: #34404d;
+        box-shadow: 0 12px 30px rgba(52,72,92,.12);
+        font-size: 13px;
+        font-weight: 720;
+        white-space: nowrap;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(4, 416px);
+        gap: 28px;
+        overflow-x: auto;
+        padding-bottom: 22px;
+      }
+
+      .shot {
+        display: grid;
+        gap: 12px;
+      }
+
+      .shot-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 0 4px;
+      }
+
+      .shot-title h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 760;
+      }
+
+      .shot-title span {
+        color: #596473;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .watch {
+        position: relative;
+        width: 416px;
+        height: 496px;
+        border-radius: 86px;
+        overflow: hidden;
+        color: var(--text);
+        background: var(--screen);
+        box-shadow:
+          0 24px 56px rgba(0,0,0,.34),
+          0 0 0 1px rgba(255,255,255,.16);
+        isolation: isolate;
+      }
+
+      .watch::before {
+        content: "";
+        position: absolute;
+        inset: -40px;
+        z-index: 0;
+        background:
+          radial-gradient(circle at 16% 16%, rgba(143,232,194,.16), transparent 25%),
+          radial-gradient(circle at 84% 12%, rgba(98,197,255,.14), transparent 26%),
+          radial-gradient(circle at 75% 86%, rgba(255,192,120,.08), transparent 28%);
+        filter: blur(16px);
+      }
+
+      .watch > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .status {
+        height: 56px;
+        padding: 24px 34px 0;
+        display: flex;
+        justify-content: space-between;
+        font-size: 20px;
+        font-weight: 760;
+      }
+
+      .status small {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .screen-content {
+        padding: 24px 28px 28px;
+      }
+
+      .screen-content.data-screen {
+        padding: 14px 24px 20px;
+      }
+
+      .eyebrow {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+      }
+
+      .watch h3 {
+        margin: 6px 0 0;
+        font-size: 31px;
+        line-height: 1.05;
+        font-weight: 790;
+      }
+
+      .watch h4 {
+        margin: 0;
+        font-size: 25px;
+        line-height: 1.12;
+        font-weight: 780;
+      }
+
+      .watch p {
+        margin: 9px 0 0;
+        color: var(--soft);
+        font-size: 14px;
+        line-height: 1.4;
+        font-weight: 640;
+      }
+
+      .rings {
+        position: relative;
+        width: 174px;
+        height: 174px;
+        margin: 24px auto 0;
+      }
+
+      .rings svg {
+        width: 174px;
+        height: 174px;
+        filter: drop-shadow(0 0 14px rgba(143,232,194,.18));
+      }
+
+      .ring-core {
+        position: absolute;
+        inset: 60px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        text-align: center;
+        background: rgba(4,6,9,.72);
+        border: 1px solid rgba(255,255,255,.12);
+      }
+
+      .ring-core b {
+        display: block;
+        font-size: 42px;
+        line-height: .9;
+        font-weight: 790;
+      }
+
+      .ring-core span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+      }
+
+      .center-copy {
+        margin-top: 18px;
+        text-align: center;
+      }
+
+      .mini-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-top: 22px;
+      }
+
+      .mini-card,
+      .task,
+      .record-row,
+      .comp-card,
+      .stack-note {
+        background: var(--glass);
+        border: 1px solid var(--line);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.13),
+          0 10px 22px rgba(0,0,0,.16);
+        backdrop-filter: blur(24px) saturate(1.25);
+        -webkit-backdrop-filter: blur(24px) saturate(1.25);
+      }
+
+      .mini-card {
+        min-height: 70px;
+        border-radius: 24px;
+        padding: 13px 18px;
+      }
+
+      .mini-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+      }
+
+      .mini-card b {
+        display: block;
+        margin-top: 8px;
+        font-size: 22px;
+        line-height: 1;
+        font-weight: 780;
+      }
+
+      .data-top {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: start;
+        margin-bottom: 11px;
+      }
+
+      .data-top h3 {
+        margin-top: 3px;
+        font-size: 27px;
+      }
+
+      .score-chip {
+        min-width: 70px;
+        padding: 8px 10px;
+        border-radius: 22px;
+        text-align: center;
+        background: rgba(143,232,194,.16);
+        border: 1px solid rgba(143,232,194,.26);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+      }
+
+      .score-chip b {
+        display: block;
+        font-size: 24px;
+        line-height: 1;
+        font-weight: 790;
+      }
+
+      .score-chip span {
+        display: block;
+        margin-top: 3px;
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 780;
+      }
+
+      .watch-data-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .data-card {
+        min-height: 84px;
+        padding: 11px 13px;
+        border-radius: 24px;
+        background: var(--glass);
+        border: 1px solid var(--line);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.13),
+          0 9px 18px rgba(0,0,0,.15);
+      }
+
+      .data-card.wide {
+        grid-column: 1 / -1;
+        min-height: 88px;
+        display: grid;
+        grid-template-columns: 1fr 142px;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .data-label {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 740;
+      }
+
+      .data-value {
+        display: block;
+        margin-top: 7px;
+        font-size: 24px;
+        line-height: 1;
+        font-weight: 790;
+      }
+
+      .data-value small {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+      }
+
+      .data-note {
+        display: block;
+        margin-top: 7px;
+        color: var(--c);
+        font-size: 11px;
+        font-weight: 760;
+      }
+
+      .sparkline {
+        width: 100%;
+        height: 36px;
+        overflow: visible;
+      }
+
+      .bar-mini {
+        display: flex;
+        align-items: end;
+        gap: 4px;
+        height: 32px;
+        margin-top: 10px;
+      }
+
+      .bar-mini i {
+        width: 7px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.13);
+      }
+
+      .bar-mini i.on {
+        background: var(--c);
+        box-shadow: 0 0 10px color-mix(in srgb, var(--c), transparent 72%);
+      }
+
+      .data-action {
+        margin-top: 10px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 15px;
+        border-radius: 21px;
+        color: #06110f;
+        background: linear-gradient(135deg, rgba(143,232,194,.96), rgba(98,197,255,.9));
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .data-action span {
+        color: rgba(6,17,15,.72);
+        font-size: 11px;
+        font-weight: 760;
+      }
+
+      .task-list {
+        display: grid;
+        gap: 15px;
+        margin-top: 28px;
+      }
+
+      .task {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 14px;
+        align-items: center;
+        min-height: 74px;
+        border-radius: 29px;
+        padding: 14px 18px;
+      }
+
+      .task:first-child {
+        background: var(--glass-strong);
+        border-color: rgba(255,255,255,.17);
+      }
+
+      .ico {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: var(--c);
+        background: color-mix(in srgb, var(--c), transparent 84%);
+        font-size: 17px;
+        font-weight: 790;
+      }
+
+      .task b {
+        display: block;
+        font-size: 17px;
+        font-weight: 780;
+      }
+
+      .task span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      .record-list {
+        display: grid;
+        gap: 14px;
+        margin-top: 28px;
+      }
+
+      .record-row {
+        min-height: 58px;
+        border-radius: 24px;
+        padding: 13px 18px;
+        display: grid;
+        grid-template-columns: 78px 1fr 30px;
+        align-items: center;
+      }
+
+      .record-row b {
+        font-size: 17px;
+      }
+
+      .dots {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .dots i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.18);
+      }
+
+      .dots i.on {
+        background: var(--c);
+        box-shadow: 0 0 12px color-mix(in srgb, var(--c), transparent 70%);
+      }
+
+      .record-row strong {
+        font-size: 22px;
+      }
+
+      .save {
+        margin-top: 24px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 24px;
+        color: #051011;
+        background: linear-gradient(135deg, var(--green), var(--blue));
+        font-size: 17px;
+        font-weight: 790;
+      }
+
+      .face-time {
+        padding: 30px 34px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+      }
+
+      .face-time b {
+        font-size: 54px;
+        line-height: .95;
+        font-weight: 760;
+      }
+
+      .face-time span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .wide-comp {
+        margin: 30px 28px 0;
+        min-height: 138px;
+        padding: 23px;
+        display: grid;
+        grid-template-columns: 82px 1fr;
+        gap: 24px;
+        align-items: center;
+        border-radius: 32px;
+        background: var(--glass-strong);
+        border: 1px solid rgba(255,255,255,.15);
+      }
+
+      .small-ring {
+        position: relative;
+        width: 82px;
+        height: 82px;
+      }
+
+      .small-ring svg { width: 82px; height: 82px; }
+
+      .small-ring b {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+      }
+
+      .comp-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        margin: 26px 28px 0;
+      }
+
+      .comp-card {
+        height: 112px;
+        border-radius: 34px;
+        padding: 22px;
+      }
+
+      .comp-card b {
+        display: block;
+        margin-top: 8px;
+        font-size: 17px;
+      }
+
+      .stack-note {
+        margin: 25px 64px 0;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 19px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="head">
+        <div>
+          <h1>Body Coach Watch UI V1</h1>
+          <p>Apple Watch 端不做 iPhone 缩小版。这里输出 4 个 46mm 画板：今日状态、今日任务、快速记录、表盘 / Smart Stack 组件。数据仍为模拟占位。</p>
+        </div>
+        <div class="badge">Watch 46mm · 416 × 496</div>
+      </header>
+
+      <section class="board">
+        <article class="shot">
+          <div class="shot-title"><h2>Watch A - 数据总览</h2><span>表格优先</span></div>
+          <div class="watch">
+            <div class="status"><span>19:32</span><small>●● 84%</small></div>
+            <div class="screen-content data-screen">
+              <div class="data-top">
+                <div>
+                  <div class="eyebrow">19:27 更新 · 模拟数据</div>
+                  <h3>身体数据</h3>
+                  <p>轻训练，恢复偏弱</p>
+                </div>
+                <div class="score-chip"><b>78</b><span>正常</span></div>
+              </div>
+
+              <div class="watch-data-grid">
+                <div class="data-card wide" style="--c:var(--blue)">
+                  <div>
+                    <span class="data-label">心率变化</span>
+                    <span class="data-value">69 <small>bpm</small></span>
+                    <span class="data-note">最高 116 · 最低 57</span>
+                  </div>
+                  <svg class="sparkline" viewBox="0 0 142 36">
+                    <path d="M2 23 C14 20 19 26 31 21 S52 16 63 22 S82 27 90 15 S105 10 116 16 S130 21 140 13" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M2 23 C14 20 19 26 31 21 S52 16 63 22 S82 27 90 15 S105 10 116 16 S130 21 140 13 L140 36 L2 36Z" fill="color-mix(in srgb, var(--blue), transparent 86%)"/>
+                  </svg>
+                </div>
+
+                <div class="data-card" style="--c:var(--orange)">
+                  <span class="data-label">活动能量</span>
+                  <span class="data-value">684 <small>kcal</small></span>
+                  <div class="bar-mini">
+                    <i style="height:13px"></i><i style="height:18px"></i><i class="on" style="height:21px"></i><i class="on" style="height:27px"></i><i class="on" style="height:31px"></i><i style="height:22px"></i><i style="height:16px"></i>
+                  </div>
+                </div>
+
+                <div class="data-card" style="--c:var(--green)">
+                  <span class="data-label">睡眠</span>
+                  <span class="data-value">6h34</span>
+                  <span class="data-note">低于基线 42m</span>
+                  <div class="bar-mini">
+                    <i class="on" style="height:22px"></i><i class="on" style="height:26px"></i><i class="on" style="height:19px"></i><i style="height:14px"></i><i style="height:12px"></i>
+                  </div>
+                </div>
+
+                <div class="data-card" style="--c:var(--purple)">
+                  <span class="data-label">HRV</span>
+                  <span class="data-value">41 <small>ms</small></span>
+                  <svg class="sparkline" viewBox="0 0 142 36">
+                    <path d="M2 12 C18 10 22 18 37 17 S58 21 70 18 S91 14 101 20 S124 25 140 19" fill="none" stroke="var(--purple)" stroke-width="3" stroke-linecap="round"/>
+                  </svg>
+                </div>
+
+                <div class="data-card" style="--c:var(--green)">
+                  <span class="data-label">步数</span>
+                  <span class="data-value">8.4k</span>
+                  <span class="data-note">达成 86%</span>
+                  <div class="bar-mini">
+                    <i style="height:9px"></i><i style="height:14px"></i><i class="on" style="height:21px"></i><i class="on" style="height:28px"></i><i class="on" style="height:24px"></i><i style="height:17px"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="data-action">饭后快走 35 分钟 <span>低恢复成本</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="shot">
+          <div class="shot-title"><h2>Watch B - 今日任务</h2><span>一键执行</span></div>
+          <div class="watch">
+            <div class="status"><span>19:32</span><small>●● 84%</small></div>
+            <div class="screen-content">
+              <div class="eyebrow">今天 3 件事</div>
+              <h3>按恢复排</h3>
+              <p>先完成低成本动作</p>
+              <div class="task-list">
+                <div class="task" style="--c:var(--green)"><div class="ico">步</div><div><b>饭后快走 35 分钟</b><span>补足活动，不增加恢复压力</span></div></div>
+                <div class="task" style="--c:var(--blue)"><div class="ico">眠</div><div><b>23:30 前上床</b><span>连续 2 天恢复偏弱</span></div></div>
+                <div class="task" style="--c:var(--orange)"><div class="ico">餐</div><div><b>晚餐保持正常</b><span>不继续削热量</span></div></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="shot">
+          <div class="shot-title"><h2>Watch C - 快速记录</h2><span>少输入</span></div>
+          <div class="watch">
+            <div class="status"><span>19:32</span><small>●● 84%</small></div>
+            <div class="screen-content">
+              <div class="eyebrow">补充主观数据</div>
+              <h3>快速记录</h3>
+              <p>只记录影响判断的项目</p>
+              <div class="record-list">
+                <div class="record-row" style="--c:var(--purple)"><b>压力</b><div class="dots"><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><strong>6</strong></div>
+                <div class="record-row" style="--c:var(--orange)"><b>疲劳</b><div class="dots"><i></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div><strong>4</strong></div>
+                <div class="record-row" style="--c:var(--green)"><b>饥饿</b><div class="dots"><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i></div><strong>5</strong></div>
+              </div>
+              <div class="save">保存今日状态</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="shot">
+          <div class="shot-title"><h2>Watch D - 表盘 / Smart Stack</h2><span>常驻入口</span></div>
+          <div class="watch">
+            <div class="face-time"><b>10:21</b><span>FRI 8</span></div>
+            <div class="wide-comp">
+              <div class="small-ring">
+                <svg viewBox="0 0 82 82">
+                  <circle cx="41" cy="41" r="36" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="9"/>
+                  <circle cx="41" cy="41" r="36" fill="none" stroke="var(--green)" stroke-width="9" stroke-linecap="round" stroke-dasharray="176 226" transform="rotate(-90 41 41)"/>
+                </svg>
+                <b>78</b>
+              </div>
+              <div>
+                <div class="eyebrow">Body Coach</div>
+                <h4>状态正常</h4>
+                <p>轻训练 · 23:30 睡</p>
+              </div>
+            </div>
+            <div class="comp-grid">
+              <div class="comp-card"><div class="eyebrow" style="color:var(--green)">综合</div><b>78 · 正常</b></div>
+              <div class="comp-card"><div class="eyebrow" style="color:var(--blue)">提醒</div><b>23:30 睡</b></div>
+            </div>
+            <div class="stack-note">Smart Stack: 晚饭后快走 35 分钟</div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

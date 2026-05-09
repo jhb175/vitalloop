@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Body Coach UI V5 Liquid Glass</title>
+    <style>
+      :root {
+        --font:
+          Inter, "SF Pro Display", "SF Pro Text", -apple-system,
+          BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font);
+        letter-spacing: 0;
+        color: #101217;
+        background:
+          radial-gradient(circle at 12% -8%, rgba(120, 226, 182, 0.22), transparent 30%),
+          radial-gradient(circle at 86% 8%, rgba(104, 144, 214, 0.19), transparent 34%),
+          radial-gradient(circle at 54% 110%, rgba(245, 172, 118, 0.12), transparent 36%),
+          linear-gradient(135deg, #12141a 0%, #eef3f4 49%, #dfe8ea 100%);
+      }
+
+      .page {
+        width: min(1040px, 100%);
+        margin: 0 auto;
+        padding: 36px 28px 58px;
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 34px;
+        line-height: 1.05;
+        font-weight: 760;
+      }
+
+      .head p {
+        margin: 10px 0 0;
+        max-width: 740px;
+        color: #4d5765;
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .badge {
+        padding: 10px 13px;
+        border-radius: 999px;
+        color: #354251;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.42));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.8),
+          0 12px 34px rgba(52, 72, 92, 0.12);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(2, 393px);
+        gap: 42px;
+        overflow-x: auto;
+        align-items: start;
+        padding: 4px 0 18px;
+      }
+
+      .shot {
+        display: grid;
+        gap: 12px;
+      }
+
+      .shot-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 0 4px;
+      }
+
+      .shot-title h2 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 730;
+      }
+
+      .shot-title span {
+        color: #657180;
+        font-size: 12px;
+      }
+
+      .phone {
+        position: relative;
+        width: 393px;
+        height: 852px;
+        overflow: hidden;
+        border-radius: 42px;
+        box-shadow:
+          0 28px 78px rgba(0,0,0,.36),
+          0 0 0 1px rgba(255,255,255,.18);
+        isolation: isolate;
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        inset: -80px -60px auto;
+        height: 310px;
+        background:
+          radial-gradient(circle at 12% 35%, var(--halo-a), transparent 26%),
+          radial-gradient(circle at 46% 18%, var(--halo-b), transparent 28%),
+          radial-gradient(circle at 84% 36%, var(--halo-c), transparent 29%);
+        filter: blur(18px);
+        opacity: .88;
+        z-index: 0;
+      }
+
+      .phone::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(140deg, rgba(255,255,255,.22), transparent 18% 78%, rgba(255,255,255,.12)),
+          radial-gradient(circle at 50% 0%, rgba(255,255,255,.12), transparent 24%);
+        mix-blend-mode: screen;
+        opacity: var(--phone-gloss);
+        z-index: 2;
+      }
+
+      .screen {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        padding: 18px 18px 84px;
+        overflow: hidden;
+        background: var(--phone-bg);
+      }
+
+      .screen::before {
+        content: "";
+        position: absolute;
+        inset: 92px 18px auto;
+        height: 130px;
+        border-radius: 50%;
+        background: var(--soft-reflection);
+        filter: blur(46px);
+        opacity: .66;
+        pointer-events: none;
+      }
+
+      .status {
+        height: 34px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 5px;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 720;
+      }
+
+      .topbar {
+        margin-top: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+      }
+
+      .hello {
+        color: var(--text);
+        opacity: .66;
+        font-size: 15px;
+        font-weight: 630;
+      }
+
+      .title {
+        margin-top: 5px;
+        color: var(--text);
+        font-size: 31px;
+        line-height: 1.05;
+        font-weight: 760;
+      }
+
+      .glass-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        position: relative;
+        background:
+          radial-gradient(circle at 50% 35%, #f3d5cb 0 22%, transparent 23%),
+          radial-gradient(circle at 50% 60%, #b8bfcb, #4a5361 63%, #171a20 64%);
+        border: 1px solid var(--glass-stroke);
+        box-shadow:
+          inset 0 1px 1px rgba(255,255,255,.5),
+          0 10px 30px rgba(0,0,0,.14);
+      }
+
+      .glass {
+        position: relative;
+        border-radius: 8px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-stroke);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(26px) saturate(1.45);
+        -webkit-backdrop-filter: blur(26px) saturate(1.45);
+      }
+
+      .glass::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background:
+          linear-gradient(142deg, rgba(255,255,255,.48), rgba(255,255,255,.06) 28%, transparent 55%),
+          linear-gradient(180deg, rgba(255,255,255,.18), transparent 44%);
+        opacity: var(--glass-highlight);
+      }
+
+      .glass::after {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-radius: 7px;
+        pointer-events: none;
+        border: 1px solid var(--inner-stroke);
+      }
+
+      .hero {
+        margin-top: 18px;
+        padding: 16px;
+        background: var(--hero-bg);
+      }
+
+      .hero-main {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 132px 1fr;
+        gap: 14px;
+        align-items: center;
+      }
+
+      .score-orbit {
+        position: relative;
+        width: 126px;
+        height: 126px;
+      }
+
+      .score-orbit svg {
+        width: 126px;
+        height: 126px;
+        display: block;
+        filter: drop-shadow(0 0 16px var(--ring-glow));
+      }
+
+      .score-core {
+        position: absolute;
+        inset: 29px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        text-align: center;
+        color: var(--text);
+        background: var(--score-core);
+        border: 1px solid var(--glass-stroke);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.35),
+          0 10px 26px rgba(0,0,0,.16);
+      }
+
+      .score-core b {
+        font-size: 34px;
+        line-height: .9;
+        font-weight: 760;
+      }
+
+      .score-core span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 620;
+      }
+
+      .verdict {
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .hero h3 {
+        margin: 7px 0 8px;
+        color: var(--text);
+        font-size: 25px;
+        line-height: 1.12;
+        font-weight: 760;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--soft);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .tags {
+        display: flex;
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .tag {
+        position: relative;
+        min-height: 25px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        color: var(--tag);
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--tag), white 18%), color-mix(in srgb, var(--tag), transparent 88%));
+        border: 1px solid color-mix(in srgb, var(--tag), transparent 72%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.34),
+          0 8px 18px color-mix(in srgb, var(--tag), transparent 86%);
+        font-size: 11px;
+        font-weight: 720;
+      }
+
+      .signals {
+        position: relative;
+        z-index: 1;
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .signal {
+        min-height: 66px;
+        padding: 9px 8px;
+        border-radius: 8px;
+        background: var(--chip-bg);
+        border: 1px solid var(--chip-stroke);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+        backdrop-filter: blur(16px) saturate(1.3);
+        -webkit-backdrop-filter: blur(16px) saturate(1.3);
+      }
+
+      .signal .name {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .signal .num {
+        margin-top: 8px;
+        color: var(--text);
+        font-size: 18px;
+        line-height: 1;
+        font-weight: 750;
+      }
+
+      .signal .trend {
+        margin-top: 5px;
+        color: var(--signal);
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .section-head {
+        margin: 18px 0 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+
+      .section-head h3 {
+        margin: 0;
+        color: var(--text);
+        font-size: 20px;
+        font-weight: 760;
+      }
+
+      .section-head span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 10px;
+      }
+
+      .wide {
+        grid-column: 1 / -1;
+        min-height: 132px;
+        padding: 14px;
+      }
+
+      .panel {
+        min-height: 136px;
+        padding: 13px;
+      }
+
+      .panel-head {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .panel-title {
+        color: var(--soft);
+        font-size: 15px;
+        font-weight: 730;
+      }
+
+      .panel-meta {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .rhythm {
+        position: relative;
+        z-index: 1;
+        margin-top: 15px;
+        display: grid;
+        grid-template-columns: repeat(24, 1fr);
+        gap: 3px;
+        align-items: end;
+        height: 54px;
+      }
+
+      .rhythm i {
+        display: block;
+        border-radius: 6px;
+        background: var(--bar-off);
+      }
+
+      .rhythm i.on {
+        background: var(--c);
+        box-shadow:
+          0 0 16px color-mix(in srgb, var(--c), transparent 66%),
+          inset 0 1px 0 rgba(255,255,255,.28);
+      }
+
+      .time-row {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        color: var(--purple);
+        font-size: 11px;
+        font-weight: 680;
+      }
+
+      .radar-wrap {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 106px 1fr;
+        gap: 9px;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      .radar {
+        width: 106px;
+        height: 94px;
+        filter: drop-shadow(0 0 12px var(--radar-glow));
+      }
+
+      .legend {
+        display: grid;
+        gap: 7px;
+      }
+
+      .legend-row {
+        display: grid;
+        grid-template-columns: 10px 1fr auto;
+        gap: 7px;
+        align-items: center;
+        color: var(--soft);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--c);
+        box-shadow: 0 0 10px color-mix(in srgb, var(--c), transparent 50%);
+      }
+
+      .mini-number {
+        position: relative;
+        z-index: 1;
+        margin-top: 14px;
+        color: var(--text);
+        font-size: 30px;
+        line-height: 1;
+        font-weight: 760;
+      }
+
+      .mini-number small {
+        display: block;
+        margin-top: 6px;
+        color: var(--purple);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .spark {
+        position: relative;
+        z-index: 1;
+        margin-top: 12px;
+        width: 100%;
+        height: 42px;
+        filter: drop-shadow(0 0 10px var(--radar-glow));
+      }
+
+      .insights {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .insight {
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        align-items: center;
+        gap: 9px;
+        padding: 9px 10px;
+        border-radius: 8px;
+        background: var(--chip-bg);
+        border: 1px solid var(--chip-stroke);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+      }
+
+      .insight-ico {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: var(--c);
+        background: color-mix(in srgb, var(--c), transparent 84%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .insight b {
+        display: block;
+        color: var(--text);
+        font-size: 13px;
+        line-height: 1.15;
+      }
+
+      .insight span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .arrow {
+        color: var(--muted);
+        font-size: 20px;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 10px;
+        height: 66px;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        align-items: center;
+        padding: 7px 9px 9px;
+        border-radius: 8px;
+        background: var(--nav);
+        border: 1px solid var(--glass-stroke);
+        box-shadow:
+          var(--nav-shadow),
+          inset 0 1px 0 rgba(255,255,255,.26);
+        backdrop-filter: blur(28px) saturate(1.45);
+        -webkit-backdrop-filter: blur(28px) saturate(1.45);
+      }
+
+      .bottom-nav::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(145deg, rgba(255,255,255,.35), transparent 34% 74%, rgba(255,255,255,.12));
+        opacity: var(--nav-highlight);
+        pointer-events: none;
+      }
+
+      .nav-item {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        place-items: center;
+        gap: 4px;
+        color: var(--nav-muted);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .nav-item.active {
+        color: var(--text);
+      }
+
+      .nav-ico {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        font-size: 19px;
+      }
+
+      .theme-dark {
+        --text: #f5f7f8;
+        --soft: #d0d4dc;
+        --muted: #9198a6;
+        --accent: #8fe8c2;
+        --green: #8fe8c2;
+        --blue: #62c5ff;
+        --orange: #ffc078;
+        --purple: #bab5ff;
+        --pink: #ff658b;
+        --halo-a: rgba(255, 149, 128, .4);
+        --halo-b: rgba(91, 183, 255, .38);
+        --halo-c: rgba(128, 232, 186, .4);
+        --phone-bg:
+          radial-gradient(circle at 16% 10%, rgba(255, 149, 128, .11), transparent 28%),
+          radial-gradient(circle at 88% 12%, rgba(143, 232, 194, .12), transparent 30%),
+          linear-gradient(180deg, #080a0e, #030406 42%, #07090d 100%);
+        --soft-reflection: rgba(143, 232, 194, .22);
+        --glass-bg: linear-gradient(180deg, rgba(40, 44, 54, .7), rgba(22, 25, 31, .58));
+        --hero-bg:
+          radial-gradient(circle at 9% 0%, rgba(143, 232, 194, .18), transparent 40%),
+          linear-gradient(180deg, rgba(46, 50, 61, .74), rgba(20, 23, 30, .62));
+        --glass-stroke: rgba(255,255,255,.16);
+        --inner-stroke: rgba(255,255,255,.07);
+        --glass-shadow: 0 18px 50px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.12);
+        --glass-highlight: .58;
+        --score-core: rgba(12, 14, 19, .82);
+        --chip-bg: rgba(255,255,255,.055);
+        --chip-stroke: rgba(255,255,255,.08);
+        --bar-off: rgba(255,255,255,.07);
+        --nav: rgba(28, 31, 38, .66);
+        --nav-muted: #9299a7;
+        --nav-shadow: 0 18px 44px rgba(0,0,0,.34);
+        --nav-highlight: .7;
+        --ring-glow: rgba(143, 232, 194, .22);
+        --radar-glow: rgba(143, 232, 194, .22);
+        --phone-gloss: .54;
+      }
+
+      .theme-light {
+        --text: #17202b;
+        --soft: #4f5b68;
+        --muted: #7f8b98;
+        --accent: #217f61;
+        --green: #2f9b78;
+        --blue: #247fc0;
+        --orange: #b97836;
+        --purple: #7067b6;
+        --pink: #c84d6b;
+        --halo-a: rgba(136, 206, 180, .48);
+        --halo-b: rgba(112, 160, 219, .38);
+        --halo-c: rgba(247, 188, 123, .28);
+        --phone-bg:
+          radial-gradient(circle at 16% 10%, rgba(136, 206, 180, .22), transparent 30%),
+          radial-gradient(circle at 88% 12%, rgba(112, 160, 219, .17), transparent 30%),
+          linear-gradient(180deg, #f8faf9, #eef3f4 48%, #e7eef0 100%);
+        --soft-reflection: rgba(255, 255, 255, .9);
+        --glass-bg: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.38));
+        --hero-bg:
+          radial-gradient(circle at 10% 0%, rgba(136, 206, 180, .25), transparent 42%),
+          linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.48));
+        --glass-stroke: rgba(255,255,255,.74);
+        --inner-stroke: rgba(27,40,52,.06);
+        --glass-shadow: 0 18px 44px rgba(75, 96, 111, .13), inset 0 1px 0 rgba(255,255,255,.7);
+        --glass-highlight: .72;
+        --score-core: rgba(255, 255, 255, .72);
+        --chip-bg: rgba(255,255,255,.4);
+        --chip-stroke: rgba(255,255,255,.58);
+        --bar-off: rgba(28, 40, 52, .08);
+        --nav: rgba(255, 255, 255, .52);
+        --nav-muted: #8994a1;
+        --nav-shadow: 0 18px 44px rgba(75,96,111,.16);
+        --nav-highlight: .78;
+        --ring-glow: rgba(47, 155, 120, .2);
+        --radar-glow: rgba(47, 155, 120, .2);
+        --phone-gloss: .62;
+      }
+
+      @media (max-width: 900px) {
+        .page {
+          padding: 24px 14px 42px;
+        }
+
+        .head {
+          flex-direction: column;
+          align-items: start;
+        }
+
+        .board {
+          grid-template-columns: repeat(2, 393px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="head">
+        <div>
+          <h1>Body Coach UI V5</h1>
+          <p>基于 v4 保留表格、颜色和字体方向，重点增强 Liquid Glass 质感：背景折射、玻璃卡片、高光边缘、浮动导航和半透明交互 chip。当前数据仍为模拟占位。</p>
+        </div>
+        <div class="badge">Liquid Glass texture pass</div>
+      </header>
+
+      <section class="board">
+        <article class="shot theme-dark">
+          <div class="shot-title">
+            <h2>Dark Liquid Glass</h2>
+            <span>深色玻璃</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>19:32</span><span>▮▮▮  Wi‑Fi  30</span></div>
+              <div class="topbar">
+                <div>
+                  <div class="hello">晚上好，Ramsey</div>
+                  <div class="title">身体总览</div>
+                </div>
+                <div class="glass-avatar"></div>
+              </div>
+
+              <section class="glass hero">
+                <div class="hero-main">
+                  <div class="score-orbit">
+                    <svg viewBox="0 0 126 126">
+                      <circle cx="63" cy="63" r="53" fill="none" stroke="var(--bar-off)" stroke-width="10"/>
+                      <circle cx="63" cy="63" r="53" fill="none" stroke="var(--green)" stroke-width="10" stroke-linecap="round" stroke-dasharray="258 333" transform="rotate(-90 63 63)"/>
+                      <circle cx="63" cy="63" r="39" fill="none" stroke="var(--blue)" stroke-width="8" stroke-linecap="round" stroke-dasharray="170 245" transform="rotate(-70 63 63)"/>
+                      <circle cx="63" cy="63" r="26" fill="none" stroke="var(--orange)" stroke-width="6" stroke-linecap="round" stroke-dasharray="92 164" transform="rotate(-110 63 63)"/>
+                    </svg>
+                    <div class="score-core"><div><b>78</b><span>综合分</span></div></div>
+                  </div>
+                  <div>
+                    <div class="verdict">状态正常 · 恢复偏弱</div>
+                    <h3>今天适合轻训练，别加压。</h3>
+                    <p>活动量足够，睡眠和 HRV 拉低恢复分。优先完成低强度运动和提前睡眠。</p>
+                    <div class="tags">
+                      <span class="tag" style="--tag:var(--green)">可训练</span>
+                      <span class="tag" style="--tag:var(--orange)">需恢复</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="signals">
+                  <div class="signal" style="--signal:var(--green)"><div class="name">活力</div><div class="num">73%</div><div class="trend">↑ 6%</div></div>
+                  <div class="signal" style="--signal:var(--blue)"><div class="name">睡眠</div><div class="num">6h34</div><div class="trend">-42m</div></div>
+                  <div class="signal" style="--signal:var(--orange)"><div class="name">恢复</div><div class="num">62</div><div class="trend">偏低</div></div>
+                  <div class="signal" style="--signal:var(--purple)"><div class="name">情绪</div><div class="num">64%</div><div class="trend">正常</div></div>
+                </div>
+              </section>
+
+              <div class="section-head">
+                <h3>今日监测</h3>
+                <span>模拟数据</span>
+              </div>
+
+              <section class="dashboard">
+                <div class="glass wide">
+                  <div class="panel-head"><div class="panel-title">日内节律</div><div class="panel-meta">0:00 - 24:00</div></div>
+                  <div class="rhythm" style="--c:var(--green)">
+                    <i style="height:24px"></i><i style="height:28px"></i><i style="height:33px"></i><i style="height:35px"></i><i class="on" style="height:40px"></i><i class="on" style="height:46px"></i><i class="on" style="height:42px"></i><i style="height:38px"></i><i style="height:30px"></i><i style="height:22px"></i><i style="height:14px"></i><i style="height:18px"></i><i class="on" style="height:28px"></i><i class="on" style="height:36px"></i><i class="on" style="height:50px"></i><i style="height:43px"></i><i style="height:31px"></i><i style="height:24px"></i><i style="height:22px"></i><i class="on" style="height:32px;background:var(--blue)"></i><i class="on" style="height:40px;background:var(--blue)"></i><i style="height:34px"></i><i style="height:22px"></i><i style="height:16px"></i>
+                  </div>
+                  <div class="time-row"><span>睡眠</span><span>工作</span><span>运动窗口</span><span>恢复</span></div>
+                </div>
+
+                <div class="glass panel">
+                  <div class="panel-head"><div class="panel-title">身体雷达</div><div class="panel-meta">5 维</div></div>
+                  <div class="radar-wrap">
+                    <svg class="radar" viewBox="0 0 106 94">
+                      <polygon points="53,8 98,40 81,86 25,86 8,40" fill="none" stroke="var(--glass-stroke)"/>
+                      <polygon points="53,21 82,43 71,74 35,74 24,43" fill="none" stroke="var(--inner-stroke)"/>
+                      <polygon points="53,15 88,43 69,78 34,71 17,41" fill="color-mix(in srgb, var(--green), transparent 78%)" stroke="var(--green)" stroke-width="2"/>
+                      <circle cx="53" cy="15" r="3" fill="var(--green)"/><circle cx="88" cy="43" r="3" fill="var(--blue)"/><circle cx="69" cy="78" r="3" fill="var(--orange)"/><circle cx="34" cy="71" r="3" fill="var(--purple)"/><circle cx="17" cy="41" r="3" fill="var(--pink)"/>
+                    </svg>
+                    <div class="legend">
+                      <div class="legend-row" style="--c:var(--green)"><i class="dot"></i><span>活力</span><b>73</b></div>
+                      <div class="legend-row" style="--c:var(--blue)"><i class="dot"></i><span>睡眠</span><b>68</b></div>
+                      <div class="legend-row" style="--c:var(--orange)"><i class="dot"></i><span>恢复</span><b>62</b></div>
+                      <div class="legend-row" style="--c:var(--purple)"><i class="dot"></i><span>情绪</span><b>64</b></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="glass panel">
+                  <div class="panel-head"><div class="panel-title">体重趋势</div><div class="panel-meta">7 天</div></div>
+                  <div class="mini-number">-0.4kg<small>减脂节奏正常</small></div>
+                  <svg class="spark" viewBox="0 0 150 42">
+                    <path d="M4 10 C26 13 37 14 55 17 S88 25 106 25 S130 31 146 32" fill="none" stroke="var(--green)" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M4 10 C26 13 37 14 55 17 S88 25 106 25 S130 31 146 32 L146 42 L4 42Z" fill="color-mix(in srgb, var(--green), transparent 86%)"/>
+                  </svg>
+                </div>
+
+                <div class="glass wide">
+                  <div class="panel-head"><div class="panel-title">今天该做什么</div><div class="panel-meta">3 条建议</div></div>
+                  <div class="insights">
+                    <div class="insight" style="--c:var(--green)"><div class="insight-ico">步</div><div><b>晚饭后快走 35 分钟</b><span>补足活动消耗，不增加恢复压力</span></div><div class="arrow">›</div></div>
+                    <div class="insight" style="--c:var(--orange)"><div class="insight-ico">眠</div><div><b>23:30 前上床</b><span>连续 2 天 HRV 偏低，优先恢复</span></div><div class="arrow">›</div></div>
+                    <div class="insight" style="--c:var(--blue)"><div class="insight-ico">餐</div><div><b>晚餐保持正常，不再削热量</b><span>体重趋势正常，避免过度节食</span></div><div class="arrow">›</div></div>
+                  </div>
+                </div>
+              </section>
+
+              <nav class="bottom-nav">
+                <div class="nav-item active"><div class="nav-ico">♥</div><span>今日</span></div>
+                <div class="nav-item"><div class="nav-ico">▯</div><span>习惯</span></div>
+                <div class="nav-item"><div class="nav-ico">▥</div><span>洞察</span></div>
+                <div class="nav-item"><div class="nav-ico">▤</div><span>计划</span></div>
+                <div class="nav-item"><div class="nav-ico">⚙</div><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+        </article>
+
+        <article class="shot theme-light">
+          <div class="shot-title">
+            <h2>Light Liquid Glass</h2>
+            <span>浅色玻璃</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>19:32</span><span>▮▮▮  Wi‑Fi  30</span></div>
+              <div class="topbar">
+                <div>
+                  <div class="hello">晚上好，Ramsey</div>
+                  <div class="title">身体总览</div>
+                </div>
+                <div class="glass-avatar"></div>
+              </div>
+
+              <section class="glass hero">
+                <div class="hero-main">
+                  <div class="score-orbit">
+                    <svg viewBox="0 0 126 126">
+                      <circle cx="63" cy="63" r="53" fill="none" stroke="var(--bar-off)" stroke-width="10"/>
+                      <circle cx="63" cy="63" r="53" fill="none" stroke="var(--green)" stroke-width="10" stroke-linecap="round" stroke-dasharray="258 333" transform="rotate(-90 63 63)"/>
+                      <circle cx="63" cy="63" r="39" fill="none" stroke="var(--blue)" stroke-width="8" stroke-linecap="round" stroke-dasharray="170 245" transform="rotate(-70 63 63)"/>
+                      <circle cx="63" cy="63" r="26" fill="none" stroke="var(--orange)" stroke-width="6" stroke-linecap="round" stroke-dasharray="92 164" transform="rotate(-110 63 63)"/>
+                    </svg>
+                    <div class="score-core"><div><b>78</b><span>综合分</span></div></div>
+                  </div>
+                  <div>
+                    <div class="verdict">状态正常 · 恢复偏弱</div>
+                    <h3>今天适合轻训练，别加压。</h3>
+                    <p>活动量足够，睡眠和 HRV 拉低恢复分。优先完成低强度运动和提前睡眠。</p>
+                    <div class="tags">
+                      <span class="tag" style="--tag:var(--green)">可训练</span>
+                      <span class="tag" style="--tag:var(--orange)">需恢复</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="signals">
+                  <div class="signal" style="--signal:var(--green)"><div class="name">活力</div><div class="num">73%</div><div class="trend">↑ 6%</div></div>
+                  <div class="signal" style="--signal:var(--blue)"><div class="name">睡眠</div><div class="num">6h34</div><div class="trend">-42m</div></div>
+                  <div class="signal" style="--signal:var(--orange)"><div class="name">恢复</div><div class="num">62</div><div class="trend">偏低</div></div>
+                  <div class="signal" style="--signal:var(--purple)"><div class="name">情绪</div><div class="num">64%</div><div class="trend">正常</div></div>
+                </div>
+              </section>
+
+              <div class="section-head">
+                <h3>今日监测</h3>
+                <span>模拟数据</span>
+              </div>
+
+              <section class="dashboard">
+                <div class="glass wide">
+                  <div class="panel-head"><div class="panel-title">日内节律</div><div class="panel-meta">0:00 - 24:00</div></div>
+                  <div class="rhythm" style="--c:var(--green)">
+                    <i style="height:24px"></i><i style="height:28px"></i><i style="height:33px"></i><i style="height:35px"></i><i class="on" style="height:40px"></i><i class="on" style="height:46px"></i><i class="on" style="height:42px"></i><i style="height:38px"></i><i style="height:30px"></i><i style="height:22px"></i><i style="height:14px"></i><i style="height:18px"></i><i class="on" style="height:28px"></i><i class="on" style="height:36px"></i><i class="on" style="height:50px"></i><i style="height:43px"></i><i style="height:31px"></i><i style="height:24px"></i><i style="height:22px"></i><i class="on" style="height:32px;background:var(--blue)"></i><i class="on" style="height:40px;background:var(--blue)"></i><i style="height:34px"></i><i style="height:22px"></i><i style="height:16px"></i>
+                  </div>
+                  <div class="time-row"><span>睡眠</span><span>工作</span><span>运动窗口</span><span>恢复</span></div>
+                </div>
+
+                <div class="glass panel">
+                  <div class="panel-head"><div class="panel-title">身体雷达</div><div class="panel-meta">5 维</div></div>
+                  <div class="radar-wrap">
+                    <svg class="radar" viewBox="0 0 106 94">
+                      <polygon points="53,8 98,40 81,86 25,86 8,40" fill="none" stroke="var(--glass-stroke)"/>
+                      <polygon points="53,21 82,43 71,74 35,74 24,43" fill="none" stroke="var(--inner-stroke)"/>
+                      <polygon points="53,15 88,43 69,78 34,71 17,41" fill="color-mix(in srgb, var(--green), transparent 78%)" stroke="var(--green)" stroke-width="2"/>
+                      <circle cx="53" cy="15" r="3" fill="var(--green)"/><circle cx="88" cy="43" r="3" fill="var(--blue)"/><circle cx="69" cy="78" r="3" fill="var(--orange)"/><circle cx="34" cy="71" r="3" fill="var(--purple)"/><circle cx="17" cy="41" r="3" fill="var(--pink)"/>
+                    </svg>
+                    <div class="legend">
+                      <div class="legend-row" style="--c:var(--green)"><i class="dot"></i><span>活力</span><b>73</b></div>
+                      <div class="legend-row" style="--c:var(--blue)"><i class="dot"></i><span>睡眠</span><b>68</b></div>
+                      <div class="legend-row" style="--c:var(--orange)"><i class="dot"></i><span>恢复</span><b>62</b></div>
+                      <div class="legend-row" style="--c:var(--purple)"><i class="dot"></i><span>情绪</span><b>64</b></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="glass panel">
+                  <div class="panel-head"><div class="panel-title">体重趋势</div><div class="panel-meta">7 天</div></div>
+                  <div class="mini-number">-0.4kg<small>减脂节奏正常</small></div>
+                  <svg class="spark" viewBox="0 0 150 42">
+                    <path d="M4 10 C26 13 37 14 55 17 S88 25 106 25 S130 31 146 32" fill="none" stroke="var(--green)" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M4 10 C26 13 37 14 55 17 S88 25 106 25 S130 31 146 32 L146 42 L4 42Z" fill="color-mix(in srgb, var(--green), transparent 86%)"/>
+                  </svg>
+                </div>
+
+                <div class="glass wide">
+                  <div class="panel-head"><div class="panel-title">今天该做什么</div><div class="panel-meta">3 条建议</div></div>
+                  <div class="insights">
+                    <div class="insight" style="--c:var(--green)"><div class="insight-ico">步</div><div><b>晚饭后快走 35 分钟</b><span>补足活动消耗，不增加恢复压力</span></div><div class="arrow">›</div></div>
+                    <div class="insight" style="--c:var(--orange)"><div class="insight-ico">眠</div><div><b>23:30 前上床</b><span>连续 2 天 HRV 偏低，优先恢复</span></div><div class="arrow">›</div></div>
+                    <div class="insight" style="--c:var(--blue)"><div class="insight-ico">餐</div><div><b>晚餐保持正常，不再削热量</b><span>体重趋势正常，避免过度节食</span></div><div class="arrow">›</div></div>
+                  </div>
+                </div>
+              </section>
+
+              <nav class="bottom-nav">
+                <div class="nav-item active"><div class="nav-ico">♥</div><span>今日</span></div>
+                <div class="nav-item"><div class="nav-ico">▯</div><span>习惯</span></div>
+                <div class="nav-item"><div class="nav-ico">▥</div><span>洞察</span></div>
+                <div class="nav-item"><div class="nav-ico">▤</div><span>计划</span></div>
+                <div class="nav-item"><div class="nav-ico">⚙</div><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

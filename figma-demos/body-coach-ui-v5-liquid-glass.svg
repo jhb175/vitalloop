@@ -1,0 +1,195 @@
+<svg width="920" height="1020" viewBox="0 0 920 1020" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="920" y2="1020" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12141A"/>
+      <stop offset=".49" stop-color="#EEF3F4"/>
+      <stop offset="1" stop-color="#DFE8EA"/>
+    </linearGradient>
+    <radialGradient id="pageGlowA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(112 -50) rotate(76) scale(280 390)">
+      <stop stop-color="#78E2B6" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#78E2B6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pageGlowB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(790 42) rotate(95) scale(300 420)">
+      <stop stop-color="#6890D6" stop-opacity=".25"/>
+      <stop offset="1" stop-color="#6890D6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="darkPhoneGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(196 66) rotate(90) scale(165 235)">
+      <stop stop-color="#57B8FF" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#57B8FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lightPhoneGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(196 66) rotate(90) scale(165 235)">
+      <stop stop-color="#88CEB4" stop-opacity=".42"/>
+      <stop offset="1" stop-color="#88CEB4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="darkPhone" x1="196" y1="0" x2="196" y2="852" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#080A0E"/>
+      <stop offset=".42" stop-color="#030406"/>
+      <stop offset="1" stop-color="#07090D"/>
+    </linearGradient>
+    <linearGradient id="lightPhone" x1="196" y1="0" x2="196" y2="852" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAF9"/>
+      <stop offset=".48" stop-color="#EEF3F4"/>
+      <stop offset="1" stop-color="#E7EEF0"/>
+    </linearGradient>
+    <linearGradient id="darkGlass" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#2E323D" stop-opacity=".74"/>
+      <stop offset="1" stop-color="#14171E" stop-opacity=".62"/>
+    </linearGradient>
+    <linearGradient id="lightGlass" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FFFFFF" stop-opacity=".78"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity=".48"/>
+    </linearGradient>
+    <linearGradient id="glassShine" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFFFF" stop-opacity=".58"/>
+      <stop offset=".28" stop-color="#FFFFFF" stop-opacity=".08"/>
+      <stop offset=".55" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity=".14"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#000" flood-opacity=".36"/>
+    </filter>
+    <filter id="panelShadowDark" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000" flood-opacity=".34"/>
+    </filter>
+    <filter id="panelShadowLight" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#4B606F" flood-opacity=".16"/>
+    </filter>
+    <style>
+      .font{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",Arial,sans-serif}
+      .title{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",Arial,sans-serif;font-weight:760}
+      .darkText{fill:#F5F7F8}.darkSoft{fill:#D0D4DC}.darkMuted{fill:#9198A6}
+      .lightText{fill:#17202B}.lightSoft{fill:#4F5B68}.lightMuted{fill:#7F8B98}
+    </style>
+  </defs>
+  <rect width="920" height="1020" fill="url(#pageBg)"/>
+  <rect width="920" height="1020" fill="url(#pageGlowA)"/>
+  <rect width="920" height="1020" fill="url(#pageGlowB)"/>
+  <text x="48" y="58" fill="#101217" class="title" font-size="34">Body Coach UI V5</text>
+  <text x="48" y="86" fill="#4D5765" class="font" font-size="15">Liquid Glass texture pass: background refraction, glass panels, edge highlights, floating navigation.</text>
+
+  <g transform="translate(48 128)" filter="url(#shadow)">
+    <text x="0" y="-18" fill="#101217" class="title" font-size="18">Dark Liquid Glass</text>
+    <text x="304" y="-18" fill="#657180" class="font" font-size="12">深色玻璃</text>
+    <rect width="393" height="852" rx="42" fill="url(#darkPhone)" stroke="rgba(255,255,255,.18)"/>
+    <rect width="393" height="260" rx="42" fill="url(#darkPhoneGlow)"/>
+    <path d="M0 0 H393 V852 H0Z" fill="url(#glassShine)" opacity=".26"/>
+    <text x="23" y="36" class="font darkText" font-size="14" font-weight="720">19:32</text>
+    <text x="275" y="36" class="font darkText" font-size="14" font-weight="720">▮▮▮ Wi‑Fi 30</text>
+    <text x="18" y="84" class="font darkText" font-size="15" font-weight="630" opacity=".66">晚上好，Ramsey</text>
+    <text x="18" y="121" class="title darkText" font-size="31">身体总览</text>
+    <circle cx="355" cy="94" r="20" fill="#2B3039" stroke="rgba(255,255,255,.2)"/>
+    <circle cx="355" cy="88" r="8" fill="#F3D5CB"/><path d="M339 106 C347 86 366 86 371 107" fill="#B8BFCB"/>
+
+    <g transform="translate(18 144)" filter="url(#panelShadowDark)">
+      <rect width="357" height="242" rx="8" fill="url(#darkGlass)" stroke="rgba(255,255,255,.16)"/>
+      <rect x="1" y="1" width="355" height="240" rx="7" fill="url(#glassShine)" opacity=".34"/>
+      <circle cx="63" cy="70" r="53" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="10"/>
+      <circle cx="63" cy="70" r="53" fill="none" stroke="#8FE8C2" stroke-width="10" stroke-linecap="round" stroke-dasharray="258 333" transform="rotate(-90 63 70)"/>
+      <circle cx="63" cy="70" r="39" fill="none" stroke="#62C5FF" stroke-width="8" stroke-linecap="round" stroke-dasharray="170 245" transform="rotate(-70 63 70)"/>
+      <circle cx="63" cy="70" r="26" fill="none" stroke="#FFC078" stroke-width="6" stroke-linecap="round" stroke-dasharray="92 164" transform="rotate(-110 63 70)"/>
+      <circle cx="63" cy="70" r="34" fill="rgba(12,14,19,.82)" stroke="rgba(255,255,255,.16)"/>
+      <text x="43" y="71" class="title darkText" font-size="34">78</text><text x="47" y="89" class="font darkMuted" font-size="11" font-weight="620">综合分</text>
+      <text x="146" y="38" fill="#8FE8C2" class="font" font-size="13" font-weight="750">状态正常 · 恢复偏弱</text>
+      <text x="146" y="70" class="title darkText" font-size="25">今天适合轻训练，</text><text x="146" y="99" class="title darkText" font-size="25">别加压。</text>
+      <text x="146" y="126" class="font darkSoft" font-size="13">活动量足够，睡眠和 HRV 拉低恢复分。</text>
+      <text x="146" y="145" class="font darkSoft" font-size="13">优先低强度运动和提前睡眠。</text>
+      <rect x="146" y="160" width="54" height="24" rx="12" fill="rgba(143,232,194,.16)" stroke="rgba(143,232,194,.28)"/><text x="157" y="176" fill="#8FE8C2" class="font" font-size="11" font-weight="720">可训练</text>
+      <rect x="207" y="160" width="54" height="24" rx="12" fill="rgba(255,192,120,.16)" stroke="rgba(255,192,120,.28)"/><text x="218" y="176" fill="#FFC078" class="font" font-size="11" font-weight="720">需恢复</text>
+      <g transform="translate(0 190)">
+        <g><rect x="0" y="0" width="83" height="66" rx="8" fill="rgba(255,255,255,.055)" stroke="rgba(255,255,255,.08)"/><text x="8" y="20" class="font darkMuted" font-size="11" font-weight="650">活力</text><text x="8" y="47" class="title darkText" font-size="18">73%</text><text x="8" y="60" fill="#8FE8C2" class="font" font-size="10" font-weight="700">↑ 6%</text></g>
+        <g transform="translate(91 0)"><rect width="83" height="66" rx="8" fill="rgba(255,255,255,.055)" stroke="rgba(255,255,255,.08)"/><text x="8" y="20" class="font darkMuted" font-size="11" font-weight="650">睡眠</text><text x="8" y="47" class="title darkText" font-size="18">6h34</text><text x="8" y="60" fill="#62C5FF" class="font" font-size="10" font-weight="700">-42m</text></g>
+        <g transform="translate(182 0)"><rect width="83" height="66" rx="8" fill="rgba(255,255,255,.055)" stroke="rgba(255,255,255,.08)"/><text x="8" y="20" class="font darkMuted" font-size="11" font-weight="650">恢复</text><text x="8" y="47" class="title darkText" font-size="18">62</text><text x="8" y="60" fill="#FFC078" class="font" font-size="10" font-weight="700">偏低</text></g>
+        <g transform="translate(273 0)"><rect width="83" height="66" rx="8" fill="rgba(255,255,255,.055)" stroke="rgba(255,255,255,.08)"/><text x="8" y="20" class="font darkMuted" font-size="11" font-weight="650">情绪</text><text x="8" y="47" class="title darkText" font-size="18">64%</text><text x="8" y="60" fill="#BAB5FF" class="font" font-size="10" font-weight="700">正常</text></g>
+      </g>
+    </g>
+    <text x="18" y="424" class="title darkText" font-size="20">今日监测</text><text x="314" y="424" class="font darkMuted" font-size="12">模拟数据</text>
+    <g transform="translate(18 438)" filter="url(#panelShadowDark)">
+      <rect width="357" height="132" rx="8" fill="rgba(28,31,38,.66)" stroke="rgba(255,255,255,.16)"/>
+      <rect x="1" y="1" width="355" height="130" rx="7" fill="url(#glassShine)" opacity=".22"/>
+      <text x="14" y="28" class="font darkSoft" font-size="15" font-weight="730">日内节律</text><text x="285" y="28" class="font darkMuted" font-size="11" font-weight="650">0:00 - 24:00</text>
+      <g transform="translate(14 48)" fill="rgba(255,255,255,.07)">
+        <rect width="8" height="24" y="30" rx="4"/><rect x="14" width="8" height="28" y="26" rx="4"/><rect x="28" width="8" height="33" y="21" rx="4"/><rect x="42" width="8" height="35" y="19" rx="4"/><rect x="56" width="8" height="40" y="14" rx="4" fill="#8FE8C2"/><rect x="70" width="8" height="46" y="8" rx="4" fill="#8FE8C2"/><rect x="84" width="8" height="42" y="12" rx="4" fill="#8FE8C2"/><rect x="98" width="8" height="38" y="16" rx="4"/><rect x="112" width="8" height="30" y="24" rx="4"/><rect x="126" width="8" height="22" y="32" rx="4"/><rect x="140" width="8" height="14" y="40" rx="4"/><rect x="154" width="8" height="18" y="36" rx="4"/><rect x="168" width="8" height="28" y="26" rx="4" fill="#8FE8C2"/><rect x="182" width="8" height="36" y="18" rx="4" fill="#8FE8C2"/><rect x="196" width="8" height="50" y="4" rx="4" fill="#8FE8C2"/><rect x="210" width="8" height="43" y="11" rx="4"/><rect x="224" width="8" height="31" y="23" rx="4"/><rect x="238" width="8" height="24" y="30" rx="4"/><rect x="252" width="8" height="22" y="32" rx="4"/><rect x="266" width="8" height="32" y="22" rx="4" fill="#62C5FF"/><rect x="280" width="8" height="40" y="14" rx="4" fill="#62C5FF"/><rect x="294" width="8" height="34" y="20" rx="4"/><rect x="308" width="8" height="22" y="32" rx="4"/><rect x="322" width="8" height="16" y="38" rx="4"/>
+      </g>
+      <text x="14" y="114" fill="#BAB5FF" class="font" font-size="11" font-weight="680">睡眠</text><text x="122" y="114" fill="#BAB5FF" class="font" font-size="11" font-weight="680">工作</text><text x="218" y="114" fill="#BAB5FF" class="font" font-size="11" font-weight="680">运动窗口</text><text x="318" y="114" fill="#BAB5FF" class="font" font-size="11" font-weight="680">恢复</text>
+    </g>
+    <g transform="translate(18 580)">
+      <g filter="url(#panelShadowDark)"><rect width="177" height="136" rx="8" fill="rgba(28,31,38,.66)" stroke="rgba(255,255,255,.16)"/><rect x="1" y="1" width="175" height="134" rx="7" fill="url(#glassShine)" opacity=".2"/></g>
+      <text x="13" y="28" class="font darkSoft" font-size="15" font-weight="730">身体雷达</text><text x="137" y="28" class="font darkMuted" font-size="11">5 维</text><polygon points="63,44 98,69 84,104 41,104 27,69" fill="none" stroke="rgba(255,255,255,.16)"/><polygon points="63,51 86,70 77,94 49,94 40,70" fill="none" stroke="rgba(255,255,255,.07)"/><polygon points="63,48 91,70 76,98 48,92 35,68" fill="rgba(143,232,194,.22)" stroke="#8FE8C2" stroke-width="2"/><text x="117" y="59" class="font darkSoft" font-size="11">活力 73</text><text x="117" y="78" class="font darkSoft" font-size="11">睡眠 68</text><text x="117" y="97" class="font darkSoft" font-size="11">恢复 62</text>
+    </g>
+    <g transform="translate(205 580)">
+      <g filter="url(#panelShadowDark)"><rect width="170" height="136" rx="8" fill="rgba(28,31,38,.66)" stroke="rgba(255,255,255,.16)"/><rect x="1" y="1" width="168" height="134" rx="7" fill="url(#glassShine)" opacity=".2"/></g>
+      <text x="13" y="28" class="font darkSoft" font-size="15" font-weight="730">体重趋势</text><text x="134" y="28" class="font darkMuted" font-size="11">7 天</text><text x="13" y="72" class="title darkText" font-size="30">-0.4kg</text><text x="13" y="94" fill="#BAB5FF" class="font" font-size="13" font-weight="700">减脂节奏正常</text><path d="M14 114 C36 117 47 118 65 121 S98 129 116 129 S140 135 156 136" fill="none" stroke="#8FE8C2" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(18 726)" filter="url(#panelShadowDark)">
+      <rect width="357" height="96" rx="8" fill="rgba(28,31,38,.66)" stroke="rgba(255,255,255,.16)"/><rect x="1" y="1" width="355" height="94" rx="7" fill="url(#glassShine)" opacity=".2"/>
+      <text x="14" y="28" class="font darkSoft" font-size="15" font-weight="730">今天该做什么</text><text x="293" y="28" class="font darkMuted" font-size="11">3 条建议</text><circle cx="27" cy="56" r="14" fill="rgba(143,232,194,.16)"/><text x="21" y="61" fill="#8FE8C2" class="font" font-size="12" font-weight="760">步</text><text x="50" y="54" class="font darkText" font-size="13" font-weight="700">晚饭后快走 35 分钟</text><text x="50" y="70" class="font darkMuted" font-size="11">补足活动消耗，不增加恢复压力</text>
+    </g>
+    <g transform="translate(12 776)" filter="url(#panelShadowDark)">
+      <rect width="369" height="66" rx="8" fill="rgba(28,31,38,.66)" stroke="rgba(255,255,255,.16)"/><rect x="1" y="1" width="367" height="64" rx="7" fill="url(#glassShine)" opacity=".24"/>
+      <text x="21" y="49" class="font darkText" font-size="11" font-weight="650">今日</text><text x="96" y="49" class="font darkMuted" font-size="11" font-weight="650">习惯</text><text x="171" y="49" class="font darkMuted" font-size="11" font-weight="650">洞察</text><text x="245" y="49" class="font darkMuted" font-size="11" font-weight="650">计划</text><text x="319" y="49" class="font darkMuted" font-size="11" font-weight="650">设置</text>
+    </g>
+  </g>
+
+  <g transform="translate(484 128)" filter="url(#shadow)">
+    <text x="0" y="-18" fill="#101217" class="title" font-size="18">Light Liquid Glass</text>
+    <text x="304" y="-18" fill="#657180" class="font" font-size="12">浅色玻璃</text>
+    <rect width="393" height="852" rx="42" fill="url(#lightPhone)" stroke="rgba(255,255,255,.55)"/>
+    <rect width="393" height="260" rx="42" fill="url(#lightPhoneGlow)"/>
+    <path d="M0 0 H393 V852 H0Z" fill="url(#glassShine)" opacity=".38"/>
+    <text x="23" y="36" class="font lightText" font-size="14" font-weight="720">19:32</text>
+    <text x="275" y="36" class="font lightText" font-size="14" font-weight="720">▮▮▮ Wi‑Fi 30</text>
+    <text x="18" y="84" class="font lightText" font-size="15" font-weight="630" opacity=".66">晚上好，Ramsey</text>
+    <text x="18" y="121" class="title lightText" font-size="31">身体总览</text>
+    <circle cx="355" cy="94" r="20" fill="rgba(255,255,255,.55)" stroke="rgba(255,255,255,.74)"/>
+    <circle cx="355" cy="88" r="8" fill="#F3D5CB"/><path d="M339 106 C347 86 366 86 371 107" fill="#9BA5B3"/>
+
+    <g transform="translate(18 144)" filter="url(#panelShadowLight)">
+      <rect width="357" height="242" rx="8" fill="url(#lightGlass)" stroke="rgba(255,255,255,.74)"/>
+      <rect x="1" y="1" width="355" height="240" rx="7" fill="url(#glassShine)" opacity=".42"/>
+      <circle cx="63" cy="70" r="53" fill="none" stroke="rgba(28,40,52,.08)" stroke-width="10"/>
+      <circle cx="63" cy="70" r="53" fill="none" stroke="#2F9B78" stroke-width="10" stroke-linecap="round" stroke-dasharray="258 333" transform="rotate(-90 63 70)"/>
+      <circle cx="63" cy="70" r="39" fill="none" stroke="#247FC0" stroke-width="8" stroke-linecap="round" stroke-dasharray="170 245" transform="rotate(-70 63 70)"/>
+      <circle cx="63" cy="70" r="26" fill="none" stroke="#B97836" stroke-width="6" stroke-linecap="round" stroke-dasharray="92 164" transform="rotate(-110 63 70)"/>
+      <circle cx="63" cy="70" r="34" fill="rgba(255,255,255,.72)" stroke="rgba(255,255,255,.74)"/>
+      <text x="43" y="71" class="title lightText" font-size="34">78</text><text x="47" y="89" class="font lightMuted" font-size="11" font-weight="620">综合分</text>
+      <text x="146" y="38" fill="#217F61" class="font" font-size="13" font-weight="750">状态正常 · 恢复偏弱</text>
+      <text x="146" y="70" class="title lightText" font-size="25">今天适合轻训练，</text><text x="146" y="99" class="title lightText" font-size="25">别加压。</text>
+      <text x="146" y="126" class="font lightSoft" font-size="13">活动量足够，睡眠和 HRV 拉低恢复分。</text>
+      <text x="146" y="145" class="font lightSoft" font-size="13">优先低强度运动和提前睡眠。</text>
+      <rect x="146" y="160" width="54" height="24" rx="12" fill="rgba(47,155,120,.14)" stroke="rgba(47,155,120,.28)"/><text x="157" y="176" fill="#2F9B78" class="font" font-size="11" font-weight="720">可训练</text>
+      <rect x="207" y="160" width="54" height="24" rx="12" fill="rgba(185,120,54,.14)" stroke="rgba(185,120,54,.28)"/><text x="218" y="176" fill="#B97836" class="font" font-size="11" font-weight="720">需恢复</text>
+      <g transform="translate(0 190)">
+        <g><rect x="0" y="0" width="83" height="66" rx="8" fill="rgba(255,255,255,.4)" stroke="rgba(255,255,255,.58)"/><text x="8" y="20" class="font lightMuted" font-size="11" font-weight="650">活力</text><text x="8" y="47" class="title lightText" font-size="18">73%</text><text x="8" y="60" fill="#2F9B78" class="font" font-size="10" font-weight="700">↑ 6%</text></g>
+        <g transform="translate(91 0)"><rect width="83" height="66" rx="8" fill="rgba(255,255,255,.4)" stroke="rgba(255,255,255,.58)"/><text x="8" y="20" class="font lightMuted" font-size="11" font-weight="650">睡眠</text><text x="8" y="47" class="title lightText" font-size="18">6h34</text><text x="8" y="60" fill="#247FC0" class="font" font-size="10" font-weight="700">-42m</text></g>
+        <g transform="translate(182 0)"><rect width="83" height="66" rx="8" fill="rgba(255,255,255,.4)" stroke="rgba(255,255,255,.58)"/><text x="8" y="20" class="font lightMuted" font-size="11" font-weight="650">恢复</text><text x="8" y="47" class="title lightText" font-size="18">62</text><text x="8" y="60" fill="#B97836" class="font" font-size="10" font-weight="700">偏低</text></g>
+        <g transform="translate(273 0)"><rect width="83" height="66" rx="8" fill="rgba(255,255,255,.4)" stroke="rgba(255,255,255,.58)"/><text x="8" y="20" class="font lightMuted" font-size="11" font-weight="650">情绪</text><text x="8" y="47" class="title lightText" font-size="18">64%</text><text x="8" y="60" fill="#7067B6" class="font" font-size="10" font-weight="700">正常</text></g>
+      </g>
+    </g>
+    <text x="18" y="424" class="title lightText" font-size="20">今日监测</text><text x="314" y="424" class="font lightMuted" font-size="12">模拟数据</text>
+    <g transform="translate(18 438)" filter="url(#panelShadowLight)">
+      <rect width="357" height="132" rx="8" fill="rgba(255,255,255,.52)" stroke="rgba(255,255,255,.74)"/>
+      <rect x="1" y="1" width="355" height="130" rx="7" fill="url(#glassShine)" opacity=".34"/>
+      <text x="14" y="28" class="font lightSoft" font-size="15" font-weight="730">日内节律</text><text x="285" y="28" class="font lightMuted" font-size="11" font-weight="650">0:00 - 24:00</text>
+      <g transform="translate(14 48)" fill="rgba(28,40,52,.08)">
+        <rect width="8" height="24" y="30" rx="4"/><rect x="14" width="8" height="28" y="26" rx="4"/><rect x="28" width="8" height="33" y="21" rx="4"/><rect x="42" width="8" height="35" y="19" rx="4"/><rect x="56" width="8" height="40" y="14" rx="4" fill="#2F9B78"/><rect x="70" width="8" height="46" y="8" rx="4" fill="#2F9B78"/><rect x="84" width="8" height="42" y="12" rx="4" fill="#2F9B78"/><rect x="98" width="8" height="38" y="16" rx="4"/><rect x="112" width="8" height="30" y="24" rx="4"/><rect x="126" width="8" height="22" y="32" rx="4"/><rect x="140" width="8" height="14" y="40" rx="4"/><rect x="154" width="8" height="18" y="36" rx="4"/><rect x="168" width="8" height="28" y="26" rx="4" fill="#2F9B78"/><rect x="182" width="8" height="36" y="18" rx="4" fill="#2F9B78"/><rect x="196" width="8" height="50" y="4" rx="4" fill="#2F9B78"/><rect x="210" width="8" height="43" y="11" rx="4"/><rect x="224" width="8" height="31" y="23" rx="4"/><rect x="238" width="8" height="24" y="30" rx="4"/><rect x="252" width="8" height="22" y="32" rx="4"/><rect x="266" width="8" height="32" y="22" rx="4" fill="#247FC0"/><rect x="280" width="8" height="40" y="14" rx="4" fill="#247FC0"/><rect x="294" width="8" height="34" y="20" rx="4"/><rect x="308" width="8" height="22" y="32" rx="4"/><rect x="322" width="8" height="16" y="38" rx="4"/>
+      </g>
+      <text x="14" y="114" fill="#7067B6" class="font" font-size="11" font-weight="680">睡眠</text><text x="122" y="114" fill="#7067B6" class="font" font-size="11" font-weight="680">工作</text><text x="218" y="114" fill="#7067B6" class="font" font-size="11" font-weight="680">运动窗口</text><text x="318" y="114" fill="#7067B6" class="font" font-size="11" font-weight="680">恢复</text>
+    </g>
+    <g transform="translate(18 580)">
+      <g filter="url(#panelShadowLight)"><rect width="177" height="136" rx="8" fill="rgba(255,255,255,.52)" stroke="rgba(255,255,255,.74)"/><rect x="1" y="1" width="175" height="134" rx="7" fill="url(#glassShine)" opacity=".32"/></g>
+      <text x="13" y="28" class="font lightSoft" font-size="15" font-weight="730">身体雷达</text><text x="137" y="28" class="font lightMuted" font-size="11">5 维</text><polygon points="63,44 98,69 84,104 41,104 27,69" fill="none" stroke="rgba(255,255,255,.74)"/><polygon points="63,51 86,70 77,94 49,94 40,70" fill="none" stroke="rgba(27,40,52,.06)"/><polygon points="63,48 91,70 76,98 48,92 35,68" fill="rgba(47,155,120,.2)" stroke="#2F9B78" stroke-width="2"/><text x="117" y="59" class="font lightSoft" font-size="11">活力 73</text><text x="117" y="78" class="font lightSoft" font-size="11">睡眠 68</text><text x="117" y="97" class="font lightSoft" font-size="11">恢复 62</text>
+    </g>
+    <g transform="translate(205 580)">
+      <g filter="url(#panelShadowLight)"><rect width="170" height="136" rx="8" fill="rgba(255,255,255,.52)" stroke="rgba(255,255,255,.74)"/><rect x="1" y="1" width="168" height="134" rx="7" fill="url(#glassShine)" opacity=".32"/></g>
+      <text x="13" y="28" class="font lightSoft" font-size="15" font-weight="730">体重趋势</text><text x="134" y="28" class="font lightMuted" font-size="11">7 天</text><text x="13" y="72" class="title lightText" font-size="30">-0.4kg</text><text x="13" y="94" fill="#7067B6" class="font" font-size="13" font-weight="700">减脂节奏正常</text><path d="M14 114 C36 117 47 118 65 121 S98 129 116 129 S140 135 156 136" fill="none" stroke="#2F9B78" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(18 726)" filter="url(#panelShadowLight)">
+      <rect width="357" height="96" rx="8" fill="rgba(255,255,255,.52)" stroke="rgba(255,255,255,.74)"/><rect x="1" y="1" width="355" height="94" rx="7" fill="url(#glassShine)" opacity=".32"/>
+      <text x="14" y="28" class="font lightSoft" font-size="15" font-weight="730">今天该做什么</text><text x="293" y="28" class="font lightMuted" font-size="11">3 条建议</text><circle cx="27" cy="56" r="14" fill="rgba(47,155,120,.14)"/><text x="21" y="61" fill="#2F9B78" class="font" font-size="12" font-weight="760">步</text><text x="50" y="54" class="font lightText" font-size="13" font-weight="700">晚饭后快走 35 分钟</text><text x="50" y="70" class="font lightMuted" font-size="11">补足活动消耗，不增加恢复压力</text>
+    </g>
+    <g transform="translate(12 776)" filter="url(#panelShadowLight)">
+      <rect width="369" height="66" rx="8" fill="rgba(255,255,255,.52)" stroke="rgba(255,255,255,.74)"/><rect x="1" y="1" width="367" height="64" rx="7" fill="url(#glassShine)" opacity=".34"/>
+      <text x="21" y="49" class="font lightText" font-size="11" font-weight="650">今日</text><text x="96" y="49" class="font" fill="#8994A1" font-size="11" font-weight="650">习惯</text><text x="171" y="49" class="font" fill="#8994A1" font-size="11" font-weight="650">洞察</text><text x="245" y="49" class="font" fill="#8994A1" font-size="11" font-weight="650">计划</text><text x="319" y="49" class="font" fill="#8994A1" font-size="11" font-weight="650">设置</text>
+    </g>
+  </g>
+</svg>

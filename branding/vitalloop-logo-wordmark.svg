@@ -1,0 +1,49 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="520" rx="92" fill="#07100F"/>
+  <g transform="translate(96 78) scale(0.355)">
+    <rect width="1024" height="1024" rx="224" fill="#07100F"/>
+    <circle cx="512" cy="512" r="388" fill="url(#softGlow)"/>
+    <circle cx="512" cy="512" r="318" stroke="#142220" stroke-width="88"/>
+    <circle cx="512" cy="512" r="318" stroke="url(#outerRing)" stroke-width="88" stroke-linecap="round" stroke-dasharray="1435 1998" transform="rotate(-112 512 512)"/>
+    <circle cx="512" cy="512" r="220" stroke="#111B20" stroke-width="56"/>
+    <circle cx="512" cy="512" r="220" stroke="url(#middleRing)" stroke-width="56" stroke-linecap="round" stroke-dasharray="735 1382" transform="rotate(46 512 512)"/>
+    <circle cx="512" cy="512" r="134" stroke="#171B18" stroke-width="36"/>
+    <circle cx="512" cy="512" r="134" stroke="url(#innerRing)" stroke-width="36" stroke-linecap="round" stroke-dasharray="325 842" transform="rotate(176 512 512)"/>
+    <circle cx="512" cy="512" r="92" stroke="#10201E" stroke-width="22" stroke-opacity="0.92"/>
+    <circle cx="512" cy="512" r="92" stroke="url(#microRingA)" stroke-width="22" stroke-linecap="round" stroke-dasharray="182 578" transform="rotate(34 512 512)"/>
+    <circle cx="512" cy="512" r="96" fill="#0B1514" stroke="#7AF0BF" stroke-opacity="0.14" stroke-width="2"/>
+    <circle cx="512" cy="512" r="58" stroke="#172623" stroke-width="20"/>
+    <circle cx="512" cy="512" r="58" stroke="url(#coreRing)" stroke-width="20" stroke-linecap="round" stroke-dasharray="236 365" transform="rotate(-58 512 512)"/>
+    <circle cx="512" cy="512" r="20" fill="#7AF0BF" fill-opacity="0.18"/>
+  </g>
+  <text x="524" y="248" fill="#F3F8F6" font-family="Inter, SF Pro Display, Arial, sans-serif" font-size="126" font-weight="820">VitalLoop</text>
+  <text x="532" y="326" fill="#95A5A2" font-family="Inter, SF Pro Text, Arial, sans-serif" font-size="38" font-weight="650">Body signals. Daily decisions.</text>
+  <defs>
+    <radialGradient id="softGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(330 242) rotate(48) scale(640)">
+      <stop stop-color="#7AF0BF" stop-opacity="0.24"/>
+      <stop offset="0.52" stop-color="#45BDF6" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#07100F" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="outerRing" x1="214" y1="256" x2="792" y2="762" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7AF0BF"/>
+      <stop offset="0.58" stop-color="#45BDF6"/>
+      <stop offset="1" stop-color="#9F8BFF"/>
+    </linearGradient>
+    <linearGradient id="middleRing" x1="312" y1="716" x2="724" y2="306" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#45BDF6"/>
+      <stop offset="1" stop-color="#9F8BFF"/>
+    </linearGradient>
+    <linearGradient id="innerRing" x1="408" y1="404" x2="646" y2="642" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB76B"/>
+      <stop offset="1" stop-color="#7AF0BF"/>
+    </linearGradient>
+    <linearGradient id="coreRing" x1="454" y1="456" x2="574" y2="570" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7AF0BF"/>
+      <stop offset="1" stop-color="#45BDF6"/>
+    </linearGradient>
+    <linearGradient id="microRingA" x1="424" y1="462" x2="610" y2="584" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7AF0BF" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#45BDF6" stop-opacity="0.55"/>
+    </linearGradient>
+  </defs>
+</svg>

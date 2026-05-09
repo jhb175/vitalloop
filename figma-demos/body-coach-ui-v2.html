@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Body Coach UI V2</title>
+    <style>
+      :root {
+        --canvas: #0b0d10;
+        --phone: #050607;
+        --panel: #1a1b1f;
+        --panel-2: #202126;
+        --panel-3: #15161a;
+        --line: rgba(255, 255, 255, 0.08);
+        --text: #f5f6f8;
+        --text-soft: #c9ccd4;
+        --muted: #85899a;
+        --purple: #a9a5e8;
+        --green: #79d6b1;
+        --green-2: #2fd486;
+        --pink: #ff456f;
+        --red: #ff504f;
+        --blue: #36b8ff;
+        --cyan: #8fe3ff;
+        --orange: #ffb267;
+        --yellow: #ffd56a;
+        --watch: #111216;
+        --shadow: 0 24px 72px rgba(0, 0, 0, 0.48);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 22% 0%, rgba(121, 214, 177, 0.2), transparent 30%),
+          radial-gradient(circle at 74% 7%, rgba(99, 119, 255, 0.22), transparent 36%),
+          linear-gradient(135deg, #111318 0%, #070809 50%, #141518 100%);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+          "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+        letter-spacing: 0;
+      }
+
+      .page {
+        width: min(1460px, 100%);
+        margin: 0 auto;
+        padding: 36px 28px 58px;
+      }
+
+      .page-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 28px;
+        margin-bottom: 28px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 34px;
+        line-height: 1.05;
+        font-weight: 780;
+      }
+
+      .page-head p {
+        margin: 10px 0 0;
+        max-width: 790px;
+        color: var(--text-soft);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .note {
+        padding: 10px 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-soft);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: 393px 393px 393px;
+        gap: 34px;
+        align-items: start;
+        overflow-x: auto;
+        padding: 4px 0 18px;
+      }
+
+      .shot {
+        display: grid;
+        gap: 12px;
+      }
+
+      .shot-title {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 4px;
+        align-items: baseline;
+      }
+
+      .shot-title h2 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 740;
+      }
+
+      .shot-title span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .phone {
+        position: relative;
+        width: 393px;
+        height: 852px;
+        overflow: hidden;
+        border-radius: 42px;
+        background: var(--phone);
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 23% 0%, rgba(255, 143, 126, 0.25), transparent 18%),
+          radial-gradient(circle at 52% -4%, rgba(106, 172, 255, 0.2), transparent 20%),
+          radial-gradient(circle at 82% 0%, rgba(133, 225, 176, 0.22), transparent 20%);
+        filter: blur(10px);
+        opacity: 0.85;
+      }
+
+      .screen {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        padding: 18px 18px 84px;
+        overflow: hidden;
+      }
+
+      .statusbar {
+        height: 34px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 5px;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 720;
+      }
+
+      .header-spacer {
+        height: 138px;
+      }
+
+      .summary {
+        text-align: center;
+        margin-top: 36px;
+        padding: 0 12px;
+      }
+
+      .summary .kicker {
+        color: rgba(245, 246, 248, 0.56);
+        font-size: 16px;
+        font-weight: 660;
+      }
+
+      .summary h3 {
+        margin: 12px 0 18px;
+        color: #f4f5f7;
+        font-size: 38px;
+        line-height: 1;
+        font-weight: 820;
+      }
+
+      .state-scale {
+        width: 276px;
+        height: 26px;
+        margin: 0 auto 18px;
+        display: grid;
+        grid-template-columns: 22px 30px 1fr;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .scale-dot {
+        height: 15px;
+        border-radius: 999px;
+      }
+
+      .scale-track {
+        position: relative;
+        height: 17px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #ffd66e, #7fdcb9 45%, #88e5bd);
+      }
+
+      .scale-track::after {
+        content: "";
+        position: absolute;
+        left: 55%;
+        top: 50%;
+        width: 28px;
+        height: 28px;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: #7fdcb9;
+        box-shadow: 0 0 0 6px rgba(5, 6, 7, 0.9);
+      }
+
+      .summary p {
+        margin: 0 auto;
+        max-width: 318px;
+        color: rgba(205, 208, 220, 0.72);
+        font-size: 15px;
+        line-height: 1.5;
+        font-weight: 560;
+      }
+
+      .section-title {
+        margin: 34px 0 12px;
+        font-size: 20px;
+        font-weight: 780;
+      }
+
+      .card {
+        border-radius: 8px;
+        background: linear-gradient(180deg, var(--panel-2), var(--panel));
+        border: 1px solid var(--line);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+      }
+
+      .metric-card {
+        min-height: 140px;
+        padding: 16px;
+        display: grid;
+        grid-template-columns: 1fr 166px;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .metric-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-soft);
+        font-size: 17px;
+        font-weight: 740;
+      }
+
+      .metric-value {
+        margin-top: 26px;
+        font-size: 42px;
+        line-height: 0.9;
+        font-weight: 780;
+      }
+
+      .metric-value small {
+        color: var(--text-soft);
+        font-size: 17px;
+        font-weight: 650;
+      }
+
+      .ok {
+        margin-top: 12px;
+        color: #38df91;
+        font-size: 16px;
+        font-weight: 760;
+      }
+
+      .delta {
+        margin-top: 10px;
+        color: var(--purple);
+        font-size: 16px;
+        font-weight: 760;
+      }
+
+      .chev {
+        margin-left: auto;
+        color: #aaa8ca;
+        font-size: 30px;
+        line-height: 1;
+      }
+
+      .spark {
+        width: 166px;
+        height: 78px;
+        overflow: visible;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 78px;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        align-items: center;
+        padding: 8px 16px 15px;
+        background: rgba(28, 29, 32, 0.9);
+        border-top: 1px solid var(--line);
+        backdrop-filter: blur(18px);
+      }
+
+      .nav-item {
+        display: grid;
+        place-items: center;
+        gap: 4px;
+        color: #8c8f99;
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .nav-item.active {
+        color: #fff;
+      }
+
+      .nav-ico {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        font-size: 20px;
+      }
+
+      .date-strip {
+        margin: 22px -18px 0;
+        height: 100px;
+        padding: 10px 18px 0;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      }
+
+      .date {
+        text-align: center;
+        color: rgba(255,255,255,0.54);
+        font-weight: 680;
+      }
+
+      .date b {
+        display: block;
+        margin-top: 7px;
+        font-size: 23px;
+        color: rgba(255,255,255,0.72);
+      }
+
+      .date.active {
+        color: #111;
+        background: rgba(255,255,255,0.68);
+        border-radius: 8px;
+        height: 67px;
+        padding-top: 8px;
+      }
+
+      .date.active b {
+        color: #101114;
+      }
+
+      .data-title {
+        margin-top: 26px;
+        font-size: 21px;
+        font-weight: 760;
+      }
+
+      .heart-card {
+        margin-top: 12px;
+        padding: 16px;
+      }
+
+      .card-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--text-soft);
+        font-size: 18px;
+        font-weight: 740;
+      }
+
+      .chart-box {
+        margin-top: 14px;
+        height: 112px;
+        border-radius: 8px;
+        background: #0d0e11;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.04);
+      }
+
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr) 56px;
+        gap: 10px;
+        margin-top: 13px;
+        align-items: end;
+      }
+
+      .stat-label {
+        color: var(--purple);
+        font-size: 14px;
+        font-weight: 690;
+      }
+
+      .stat-num {
+        margin-top: 4px;
+        color: #fff;
+        font-size: 28px;
+        line-height: 1;
+        font-weight: 780;
+      }
+
+      .stat-num small {
+        font-size: 14px;
+        color: var(--text-soft);
+      }
+
+      .heart-icon {
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        font-size: 36px;
+        color: #d83e63;
+      }
+
+      .tile-grid {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .tile {
+        min-height: 151px;
+        padding: 15px;
+        display: grid;
+        align-content: space-between;
+      }
+
+      .time-bars {
+        height: 49px;
+        display: grid;
+        grid-template-columns: repeat(24, 1fr);
+        gap: 3px;
+        align-items: end;
+        opacity: 0.95;
+      }
+
+      .time-bars i {
+        display: block;
+        height: 36px;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.06);
+      }
+
+      .time-bars i.on {
+        background: var(--bar-color);
+        box-shadow: 0 0 12px color-mix(in srgb, var(--bar-color), transparent 60%);
+      }
+
+      .time-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 4px;
+        color: var(--purple);
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      .tile-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+      }
+
+      .tile-num {
+        color: #fff;
+        font-size: 36px;
+        line-height: 0.95;
+        font-weight: 780;
+      }
+
+      .tile-num small {
+        display: block;
+        margin-top: 5px;
+        color: var(--purple);
+        font-size: 18px;
+        font-weight: 720;
+      }
+
+      .tile-symbol {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 28px;
+        color: rgba(0,0,0,0.55);
+        background: color-mix(in srgb, var(--bar-color), #101114 42%);
+      }
+
+      .masonry {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .mini-card {
+        min-height: 130px;
+        padding: 13px;
+        background: linear-gradient(180deg, #17181b, #111216);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .mini-card.tall {
+        min-height: 176px;
+      }
+
+      .mini-label {
+        color: var(--text-soft);
+        font-size: 10px;
+        font-weight: 680;
+        text-transform: uppercase;
+      }
+
+      .mini-num {
+        margin-top: 4px;
+        font-size: 25px;
+        line-height: 1;
+        font-weight: 760;
+      }
+
+      .gradient-scale {
+        margin-top: 13px;
+        height: 10px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #ffd44e, #ff5d69, #da4cff, #6067ff);
+        position: relative;
+      }
+
+      .gradient-scale::after {
+        content: "";
+        position: absolute;
+        left: 74%;
+        top: -6px;
+        width: 3px;
+        height: 22px;
+        background: var(--pink);
+        border-radius: 999px;
+      }
+
+      .zone-bars {
+        margin-top: 12px;
+        height: 54px;
+        display: grid;
+        align-items: end;
+      }
+
+      .zone {
+        height: 12px;
+        display: flex;
+        color: #111;
+        overflow: hidden;
+        border-radius: 3px;
+        font-size: 7px;
+        font-weight: 750;
+      }
+
+      .zone span {
+        display: grid;
+        place-items: center;
+      }
+
+      .workout {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 10px;
+        align-items: center;
+        margin-top: 12px;
+        padding: 11px;
+        border-radius: 8px;
+        background: rgba(54, 214, 126, 0.08);
+      }
+
+      .run-dot {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: #63f08c;
+        background: rgba(47, 212, 134, 0.15);
+      }
+
+      .watch-screen {
+        padding: 18px 18px 84px;
+      }
+
+      .watch-hero {
+        margin-top: 28px;
+        display: grid;
+        grid-template-columns: 70px 1fr;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 28px;
+        background:
+          radial-gradient(circle at 35% 24%, #f5d0c6 0 18%, transparent 19%),
+          radial-gradient(circle at 50% 40%, #bfc3cf, #4b4f5a 56%, #14161a 57%);
+        border: 1px solid rgba(255,255,255,0.12);
+      }
+
+      .watch-time {
+        text-align: right;
+        font-size: 54px;
+        line-height: 0.86;
+        font-weight: 300;
+      }
+
+      .watch-date {
+        color: #ffd0c8;
+        font-size: 20px;
+        font-weight: 760;
+        text-align: right;
+      }
+
+      .watch-card {
+        margin-top: 14px;
+        height: 146px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .watch-orbit {
+        position: absolute;
+        left: -16px;
+        top: 18px;
+        width: 130px;
+        height: 110px;
+        border-radius: 8px 80px 80px 8px;
+        background: #0b684a;
+        display: grid;
+        place-items: center;
+        color: #b8f4dc;
+        font-size: 44px;
+      }
+
+      .watch-orbit::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        border-right: 1px solid rgba(255,255,255,0.35);
+        background:
+          linear-gradient(90deg, transparent 62%, rgba(255,255,255,0.09) 63% 64%, transparent 65%),
+          linear-gradient(30deg, transparent 63%, rgba(255,255,255,0.15) 64% 65%, transparent 66%),
+          linear-gradient(-30deg, transparent 63%, rgba(255,255,255,0.15) 64% 65%, transparent 66%);
+      }
+
+      .watch-info {
+        position: absolute;
+        left: 126px;
+        top: 21px;
+        right: 15px;
+      }
+
+      .watch-info h3 {
+        margin: 0 0 9px;
+        font-size: 22px;
+        font-weight: 760;
+      }
+
+      .tag {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 6px;
+        color: #7bf0bb;
+        background: rgba(126, 240, 187, 0.1);
+        font-size: 13px;
+        font-weight: 740;
+      }
+
+      .watch-info p {
+        margin: 8px 0 0;
+        color: var(--text-soft);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .rings {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .ring {
+        height: 88px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.04);
+      }
+
+      .circle-ring {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle, #050607 0 49%, transparent 50%),
+          conic-gradient(var(--ring-color) 0 75%, rgba(255,255,255,0.08) 75% 100%);
+        color: var(--ring-color);
+        font-size: 24px;
+      }
+
+      @media (max-width: 900px) {
+        .page {
+          padding: 24px 14px 42px;
+        }
+
+        .page-head {
+          flex-direction: column;
+          align-items: start;
+        }
+
+        .board {
+          grid-template-columns: repeat(3, 393px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-head">
+        <div>
+          <h1>Body Coach UI V2</h1>
+          <p>基于参考图重新设计：深色玻璃质感、强状态总结、彩色健康趋势、时间轴图表和 Watch 风格模块。旧版白底卡片和单调柱状图已替换。</p>
+        </div>
+        <div class="note">可导入 Figma 的 SVG 同步生成</div>
+      </header>
+
+      <section class="board">
+        <article class="shot">
+          <div class="shot-title">
+            <h2>V2 A - 今日总览</h2>
+            <span>状态总结 + 身心指标</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="statusbar"><span>19:32</span><span>▮▮▮  Wi‑Fi  30</span></div>
+              <section class="summary">
+                <div class="kicker">晚上好！你的今日综合情况是</div>
+                <h3>状态正常</h3>
+                <div class="state-scale">
+                  <span class="scale-dot" style="background:#ff8e8c"></span>
+                  <span class="scale-dot" style="background:#78b4ff"></span>
+                  <span class="scale-track"></span>
+                </div>
+                <p>你的活力很不错，心情波动也正常。今晚适合做 30 分钟轻运动，保持睡眠节奏。</p>
+              </section>
+
+              <div class="section-title">身心指标</div>
+              <section class="card metric-card">
+                <div>
+                  <div class="metric-head"><span>◖</span><span>身体活力</span><span class="chev">›</span></div>
+                  <div class="metric-value">73<small>% · 正向率</small></div>
+                  <div class="ok">✓ 正常</div>
+                  <div class="delta">↑ 增加 6% 相比于昨天</div>
+                </div>
+                <svg class="spark" viewBox="0 0 166 78">
+                  <defs>
+                    <linearGradient id="redFill" x1="0" x2="0" y1="0" y2="1">
+                      <stop stop-color="#ff456f" stop-opacity=".24"/>
+                      <stop offset="1" stop-color="#ff456f" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M8 48 C26 45, 34 52, 47 43 C58 35, 74 48, 82 51 C91 55, 99 67, 112 42 C126 20, 138 50, 158 55 L158 75 L8 75 Z" fill="url(#redFill)"/>
+                  <polyline points="8,48 28,48 48,48 68,57 88,70 108,48 128,57 158,66" fill="none" stroke="#ff4c60" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <g fill="#202126" stroke="#ff4c60" stroke-width="4"><circle cx="8" cy="48" r="6"/><circle cx="48" cy="48" r="6"/><circle cx="68" cy="57" r="6"/><circle cx="88" cy="70" r="6"/><circle cx="108" cy="48" r="6"/><circle cx="128" cy="57" r="6"/></g>
+                  <circle cx="158" cy="66" r="9" fill="#ff4c60"/>
+                </svg>
+              </section>
+
+              <section class="card metric-card" style="margin-top:14px">
+                <div>
+                  <div class="metric-head"><span>♥</span><span>心理情绪</span><span class="chev">›</span></div>
+                  <div class="metric-value">64<small>% · 正向率</small></div>
+                  <div class="ok">✓ 正常</div>
+                  <div class="delta">↓ 降低 3% 相比于昨天</div>
+                </div>
+                <svg class="spark" viewBox="0 0 166 78">
+                  <polyline points="10,24 42,60 82,56 118,50 140,60 158,52" fill="none" stroke="#7db7a5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <g fill="#202126" stroke="#7db7a5" stroke-width="4"><circle cx="10" cy="24" r="6"/><circle cx="42" cy="60" r="6"/><circle cx="118" cy="50" r="6"/><circle cx="140" cy="60" r="6"/></g>
+                  <circle cx="158" cy="52" r="9" fill="#7db7a5"/>
+                </svg>
+              </section>
+
+              <section class="card metric-card" style="margin-top:14px">
+                <div>
+                  <div class="metric-head"><span>ϟ</span><span>能量周期</span><span class="chev">›</span></div>
+                  <div class="metric-value">14<small>% · 负向</small></div>
+                  <div class="delta">→ 12 天后进入过渡</div>
+                </div>
+                <svg class="spark" viewBox="0 0 166 78">
+                  <polyline points="8,58 32,44 56,34 82,30 106,34 132,46 158,62" fill="none" stroke="#20b8ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <g fill="#202126" stroke="#20b8ff" stroke-width="4"><circle cx="8" cy="58" r="6"/><circle cx="56" cy="34" r="6"/><circle cx="82" cy="30" r="6"/><circle cx="106" cy="34" r="6"/><circle cx="132" cy="46" r="6"/></g>
+                  <circle cx="158" cy="62" r="9" fill="#20b8ff"/>
+                </svg>
+              </section>
+
+              <nav class="bottom-nav">
+                <div class="nav-item active"><div class="nav-ico">♥</div><span>今日</span></div>
+                <div class="nav-item"><div class="nav-ico">▯</div><span>习惯</span></div>
+                <div class="nav-item"><div class="nav-ico">▥</div><span>洞察</span></div>
+                <div class="nav-item"><div class="nav-ico">▤</div><span>导出</span></div>
+                <div class="nav-item"><div class="nav-ico">⚙</div><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+        </article>
+
+        <article class="shot">
+          <div class="shot-title">
+            <h2>V2 B - 数据洞察</h2>
+            <span>图表密集 + 时间轴</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="statusbar"><span>19:32</span><span>▮▮▮  Wi‑Fi  30</span></div>
+              <div class="date-strip">
+                <div class="date">一<b>22</b></div>
+                <div class="date">二<b>23</b></div>
+                <div class="date active">三<b>24</b></div>
+                <div class="date">四<b>25</b></div>
+                <div class="date">五<b>26</b></div>
+                <div class="date">六<b>27</b></div>
+                <div class="date">日<b>28</b></div>
+              </div>
+              <div class="data-title">身体数据洞察</div>
+              <section class="card heart-card">
+                <div class="card-title"><span>心率变化</span><span style="font-size:13px;color:var(--purple)">支持拖拽</span></div>
+                <div class="chart-box">
+                  <svg viewBox="0 0 330 112" width="100%" height="112">
+                    <path d="M0 65 C18 70, 34 66, 48 68 S82 76, 102 64 S144 61, 165 70 S198 70, 212 49 S230 58, 245 44 S260 36, 270 58 S282 26, 292 48 S306 20, 314 52 S322 34, 330 50" fill="none" stroke="#ff456f" stroke-width="4" stroke-linecap="round"/>
+                    <text x="0" y="100" fill="#a9a5e8" font-size="13">00:00</text>
+                    <text x="286" y="100" fill="#a9a5e8" font-size="13">19:27</text>
+                  </svg>
+                </div>
+                <div class="stats-row">
+                  <div><div class="stat-label">平均</div><div class="stat-num">69 <small>bpm</small></div></div>
+                  <div><div class="stat-label">最高</div><div class="stat-num">116 <small>bpm</small></div></div>
+                  <div><div class="stat-label">最低</div><div class="stat-num">57 <small>bpm</small></div></div>
+                  <div class="heart-icon">♥</div>
+                </div>
+              </section>
+
+              <section class="tile-grid">
+                <div class="card tile" style="--bar-color:#86b7a5">
+                  <div class="card-title">基础代谢</div>
+                  <div>
+                    <div class="time-bars">
+                      <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                    </div>
+                    <div class="time-meta"><span>0:00</span><span>12:00</span><span>24:00</span></div>
+                  </div>
+                  <div class="tile-bottom"><div class="tile-num">967<small>KCal · 千卡</small></div><div class="tile-symbol">◖</div></div>
+                </div>
+                <div class="card tile" style="--bar-color:#eb433f">
+                  <div class="card-title">活动消耗</div>
+                  <div>
+                    <div class="time-bars">
+                      <i class="on" style="height:8px"></i><i></i><i class="on" style="height:12px"></i><i></i><i></i><i class="on" style="height:7px"></i><i></i><i class="on" style="height:18px"></i><i class="on" style="height:22px"></i><i class="on" style="height:28px"></i><i></i><i></i><i class="on" style="height:36px"></i><i></i><i></i><i class="on" style="height:42px"></i><i class="on" style="height:48px"></i><i></i><i class="on" style="height:32px"></i><i></i><i></i><i></i><i></i><i></i>
+                    </div>
+                    <div class="time-meta"><span>0:00</span><span>12:00</span><span>24:00</span></div>
+                  </div>
+                  <div class="tile-bottom"><div class="tile-num">50<small>/120 KCal</small></div><div class="tile-symbol">◔</div></div>
+                </div>
+                <div class="card tile" style="--bar-color:#d99c65">
+                  <div class="card-title">步数</div>
+                  <div>
+                    <div class="time-bars">
+                      <i class="on" style="height:7px"></i><i></i><i class="on" style="height:16px"></i><i></i><i></i><i></i><i></i><i></i><i class="on" style="height:26px"></i><i></i><i class="on" style="height:8px"></i><i class="on" style="height:35px"></i><i></i><i></i><i class="on" style="height:31px"></i><i class="on" style="height:48px"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                    </div>
+                    <div class="time-meta"><span>0:00</span><span>12:00</span><span>24:00</span></div>
+                  </div>
+                  <div class="tile-bottom"><div class="tile-num">434<small>0.32 Km</small></div><div class="tile-symbol">♟</div></div>
+                </div>
+                <div class="card tile" style="--bar-color:#66c7de">
+                  <div class="card-title">站立时间</div>
+                  <div>
+                    <div class="time-bars">
+                      <i class="on" style="height:45px"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on" style="height:46px"></i><i></i><i></i><i></i><i class="on" style="height:45px"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                    </div>
+                    <div class="time-meta"><span>0:00</span><span>12:00</span><span>24:00</span></div>
+                  </div>
+                  <div class="tile-bottom"><div class="tile-num">3<small>/6 小时</small></div><div class="tile-symbol">▮</div></div>
+                </div>
+              </section>
+
+              <nav class="bottom-nav">
+                <div class="nav-item"><div class="nav-ico">♡</div><span>今日</span></div>
+                <div class="nav-item active"><div class="nav-ico">▯</div><span>习惯</span></div>
+                <div class="nav-item"><div class="nav-ico">▥</div><span>洞察</span></div>
+                <div class="nav-item"><div class="nav-ico">▤</div><span>导出</span></div>
+                <div class="nav-item"><div class="nav-ico">⚙</div><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+        </article>
+
+        <article class="shot">
+          <div class="shot-title">
+            <h2>V2 C - Watch / 专业卡片</h2>
+            <span>双列分析 + 手表模块</span>
+          </div>
+          <div class="phone">
+            <div class="screen watch-screen">
+              <div class="statusbar"><span>FRI 8</span><span>30</span></div>
+              <section class="watch-hero">
+                <div class="avatar"> </div>
+                <div>
+                  <div class="watch-date">FRI 8</div>
+                  <div class="watch-time">10:21</div>
+                </div>
+              </section>
+
+              <section class="card watch-card">
+                <div class="watch-orbit">☾</div>
+                <div class="watch-info">
+                  <h3>恢复经当令</h3>
+                  <span class="tag">起身</span>
+                  <p>提升活化，避免久坐。今天适合低强度恢复训练。</p>
+                </div>
+              </section>
+
+              <section class="rings">
+                <div class="ring"><div class="circle-ring" style="--ring-color:#26f06e">●</div></div>
+                <div class="ring"><div class="circle-ring" style="--ring-color:#8378ff">餐</div></div>
+                <div class="ring"><div class="circle-ring" style="--ring-color:#8fe3ff">滴</div></div>
+              </section>
+
+              <section class="masonry">
+                <div class="mini-card">
+                  <div class="mini-label">TRIMP</div>
+                  <div class="mini-num" style="color:#ff5064">412</div>
+                  <div class="gradient-scale"></div>
+                </div>
+                <div class="mini-card">
+                  <div class="mini-label">VO2MAX</div>
+                  <div class="mini-num">32.1</div>
+                  <div class="gradient-scale" style="background:linear-gradient(90deg,#ff6464,#ffd566,#47d993,#65a1ff,#7b61ff)"></div>
+                  <div style="margin-top:12px;color:#72a6ff;font-weight:760">很好</div>
+                </div>
+                <div class="mini-card tall">
+                  <div class="mini-label">训练强度</div>
+                  <div class="mini-num">61%</div>
+                  <svg viewBox="0 0 154 74" width="100%" height="74" style="margin-top:14px">
+                    <polyline points="4,6 32,32 52,25 76,48 98,42 124,62 148,56" fill="none" stroke="#d84b4b" stroke-width="2.5"/>
+                    <path d="M4 6 L32 32 L52 25 L76 48 L98 42 L124 62 L148 56 L148 74 L4 74Z" fill="#d84b4b" opacity=".18"/>
+                  </svg>
+                </div>
+                <div class="mini-card tall">
+                  <div class="mini-label">心率区间</div>
+                  <div class="mini-num">141<small style="font-size:12px;color:var(--muted)"> BPM</small></div>
+                  <div class="zone-bars">
+                    <div class="zone"><span style="width:16%;background:#a560ff">9</span><span style="width:20%;background:#ff4b63">27</span><span style="width:32%;background:#ff7a45">56</span><span style="width:32%;background:#ffd34f">182</span></div>
+                  </div>
+                  <div class="workout"><div class="run-dot">↗</div><div><div style="font-weight:760">户外跑步</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Apple Watch · 14:37</div></div></div>
+                </div>
+              </section>
+
+              <nav class="bottom-nav">
+                <div class="nav-item active"><div class="nav-ico">♥</div><span>今日</span></div>
+                <div class="nav-item"><div class="nav-ico">▯</div><span>习惯</span></div>
+                <div class="nav-item"><div class="nav-ico">▥</div><span>洞察</span></div>
+                <div class="nav-item"><div class="nav-ico">▤</div><span>导出</span></div>
+                <div class="nav-item"><div class="nav-ico">⚙</div><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
