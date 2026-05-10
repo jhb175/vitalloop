@@ -2026,7 +2026,10 @@ private struct CheckInLogView: View {
     @State private var mealNote = ""
     @State private var didLoadLatestCheckIn = false
     @State private var logFilter: LogDateFilter = .sevenDays
+    @State private var logKindFilter: LogKindFilter = .all
+    @State private var logSearchText = ""
     @State private var editingLog: EditableLog?
+    @State private var pendingDeleteLog: EditableLog?
 
     var body: some View {
         NavigationStack {
@@ -2065,6 +2068,21 @@ private struct CheckInLogView: View {
                 save: saveEditedLog,
                 delete: deleteLog
             )
+        }
+        .confirmationDialog(
+            "删除这条记录？",
+            isPresented: deleteConfirmationBinding,
+            titleVisibility: .visible
+        ) {
+            Button("删除记录", role: .destructive) {
+                confirmPendingDelete()
+            }
+
+            Button("取消", role: .cancel) {
+                pendingDeleteLog = nil
+            }
+        } message: {
+            Text("删除后会刷新本地记录和今日评分。")
         }
     }
 
@@ -2287,7 +2305,7 @@ private struct CheckInLogView: View {
                         Text("记录列表")
                             .font(.headline.weight(.bold))
                             .foregroundStyle(Color.bcInk)
-                        Text("\(filteredLogRows.count) 条 · \(logFilter.displayName)")
+                        Text("\(filteredLogRows.count) 条 · \(logFilter.displayName) · \(logKindFilter.displayName)")
                             .font(.caption2.weight(.bold))
                             .foregroundStyle(Color.bcMuted)
                     }
@@ -2303,6 +2321,29 @@ private struct CheckInLogView: View {
                     .frame(maxWidth: 210)
                 }
 
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcMuted)
+
+                    TextField("搜索记录、备注或来源", text: $logSearchText)
+                        .textFieldStyle(.plain)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.bcInk)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                }
+                .padding(.horizontal, 11)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                Picker("记录类型", selection: $logKindFilter) {
+                    ForEach(LogKindFilter.allCases) { filter in
+                        Text(filter.displayName).tag(filter)
+                    }
+                }
+                .pickerStyle(.segmented)
+
                 if filteredLogRows.isEmpty {
                     Text(emptyLogText)
                         .font(.caption.weight(.medium))
@@ -2317,7 +2358,7 @@ private struct CheckInLogView: View {
                                     editingLog = row.editableLog
                                 },
                                 delete: {
-                                    deleteLog(row.editableLog)
+                                    requestDelete(row.editableLog)
                                 }
                             )
                         }
@@ -2351,7 +2392,7 @@ private struct CheckInLogView: View {
                         .foregroundStyle(Color.bcSoft)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    VStack(spacing: 8) {
+                    LazyVStack(spacing: 8) {
                         ForEach(filteredSubjectiveCheckIns, id: \.id) { record in
                             CheckInHistoryRowView(
                                 record: record,
@@ -2359,7 +2400,7 @@ private struct CheckInLogView: View {
                                     editingLog = .subjective(record)
                                 },
                                 delete: {
-                                    deleteLog(.subjective(record))
+                                    requestDelete(.subjective(record))
                                 }
                             )
                         }
@@ -2484,14 +2525,28 @@ private struct CheckInLogView: View {
     }
 
     private var filteredLogRows: [RecentLogRow] {
-        recentLogRows.filter { logFilter.contains($0.date) }
+        recentLogRows.filter { row in
+            logFilter.contains(row.date)
+                && logKindFilter.contains(row.kind)
+                && matchesSearch(row)
+        }
     }
 
     private var filteredSubjectiveCheckIns: [SubjectiveCheckIn] {
-        persistenceStore.recentSubjectiveCheckIns.filter { logFilter.contains($0.capturedAt) }
+        persistenceStore.recentSubjectiveCheckIns.filter { record in
+            logFilter.contains(record.capturedAt) && matchesSubjectiveSearch(record)
+        }
     }
 
     private var emptyLogText: String {
+        if !trimmedLogSearchText.isEmpty {
+            return "没有匹配“\(trimmedLogSearchText)”的记录。可以清空搜索或切换筛选条件。"
+        }
+
+        if logKindFilter != .all {
+            return "\(logFilter.displayName)内没有\(logKindFilter.displayName)记录。可以切换为全部类型。"
+        }
+
         switch logFilter {
         case .today:
             return "今天还没有本地记录。保存主观状态、体重或饮食简记后，会显示在这里。"
@@ -2500,6 +2555,23 @@ private struct CheckInLogView: View {
         case .all:
             return "还没有本地记录。保存主观状态、体重或饮食简记后，会显示在这里。"
         }
+    }
+
+    private var trimmedLogSearchText: String {
+        logSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var deleteConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: {
+                pendingDeleteLog != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    pendingDeleteLog = nil
+                }
+            }
+        )
     }
 
     private var latestStatusLabel: String {
@@ -2610,6 +2682,34 @@ private struct CheckInLogView: View {
         return parts.joined(separator: " · ")
     }
 
+    private func matchesSearch(_ row: RecentLogRow) -> Bool {
+        let query = trimmedLogSearchText
+        guard !query.isEmpty else {
+            return true
+        }
+
+        return row.searchText.localizedCaseInsensitiveContains(query)
+    }
+
+    private func matchesSubjectiveSearch(_ record: SubjectiveCheckIn) -> Bool {
+        let query = trimmedLogSearchText
+        guard !query.isEmpty else {
+            return true
+        }
+
+        let searchText = [
+            "主观状态",
+            "压力 \(record.stress)",
+            "疲劳 \(record.fatigue)",
+            "饥饿 \(record.hunger)",
+            record.source,
+            record.statusLabel,
+            record.capturedAt.formatted(date: .abbreviated, time: .shortened)
+        ].joined(separator: " ")
+
+        return searchText.localizedCaseInsensitiveContains(query)
+    }
+
     private func saveWeightEntry() {
         guard let parsedWeightKg else {
             return
@@ -2667,6 +2767,19 @@ private struct CheckInLogView: View {
         }
 
         reloadLogsForCurrentFilter()
+    }
+
+    private func requestDelete(_ log: EditableLog) {
+        pendingDeleteLog = log
+    }
+
+    private func confirmPendingDelete() {
+        guard let log = pendingDeleteLog else {
+            return
+        }
+
+        pendingDeleteLog = nil
+        deleteLog(log)
     }
 }
 
@@ -2754,6 +2867,39 @@ private enum LogDateFilter: String, CaseIterable, Identifiable {
             return date >= start
         case .all:
             return true
+        }
+    }
+}
+
+private enum LogKindFilter: String, CaseIterable, Identifiable {
+    case all
+    case subjective
+    case weight
+    case meal
+
+    var id: String {
+        rawValue
+    }
+
+    var displayName: String {
+        switch self {
+        case .all:
+            return "全部"
+        case .subjective:
+            return "主观"
+        case .weight:
+            return "体重"
+        case .meal:
+            return "饮食"
+        }
+    }
+
+    func contains(_ kind: EditableLogKind) -> Bool {
+        switch (self, kind) {
+        case (.all, _), (.subjective, .subjective), (.weight, .weight), (.meal, .meal):
+            return true
+        default:
+            return false
         }
     }
 }
@@ -2848,6 +2994,17 @@ private enum EditableLogKind {
     case subjective
     case weight
     case meal
+
+    var displayName: String {
+        switch self {
+        case .subjective:
+            return "主观"
+        case .weight:
+            return "体重"
+        case .meal:
+            return "饮食"
+        }
+    }
 }
 
 private enum EditableLog: Identifiable {
@@ -2921,6 +3078,16 @@ private struct RecentLogRow: Identifiable {
     let source: String
     let color: Color
     let editableLog: EditableLog
+
+    var searchText: String {
+        [
+            kind.displayName,
+            title,
+            detail,
+            source,
+            date.formatted(date: .abbreviated, time: .shortened)
+        ].joined(separator: " ")
+    }
 }
 
 private struct RecentLogRowView: View {
@@ -2998,6 +3165,7 @@ private struct LogEditSheet: View {
     @State private var weightText = ""
     @State private var note = ""
     @State private var mealKind: MealLogKind = .normal
+    @State private var showsDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -3036,8 +3204,7 @@ private struct LogEditSheet: View {
 
                 Section {
                     Button("删除记录", role: .destructive) {
-                        delete(log)
-                        dismiss()
+                        showsDeleteConfirmation = true
                     }
                 }
             }
@@ -3061,6 +3228,20 @@ private struct LogEditSheet: View {
         }
         .onAppear {
             loadDraft()
+        }
+        .confirmationDialog(
+            "删除这条记录？",
+            isPresented: $showsDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("删除记录", role: .destructive) {
+                delete(log)
+                dismiss()
+            }
+
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("删除后会刷新本地记录和今日评分。")
         }
     }
 
