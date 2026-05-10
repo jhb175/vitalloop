@@ -14,6 +14,10 @@ final class WatchSummaryStore {
         syncService.latestPayload ?? .sample
     }
 
+    var displayPayload: WatchSummaryPayload {
+        syncService.latestPayload ?? .waitingForSync
+    }
+
     var lastReceivedAt: Date? {
         syncService.lastReceivedAt
     }

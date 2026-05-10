@@ -18,7 +18,7 @@ private struct WatchDashboardPage: View {
     @State private var hunger = 6
 
     private var payload: WatchSummaryPayload {
-        store.payload
+        store.displayPayload
     }
 
     var body: some View {

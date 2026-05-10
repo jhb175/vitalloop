@@ -681,37 +681,37 @@ private struct HealthDataCoverageCard: View {
         [
             HealthSignalCoverageItem(
                 title: "活动能量",
-                isAvailable: snapshot.activeEnergyKcal != nil,
+                isAvailable: isHealthDataAvailable(snapshot.activeEnergyKcal != nil),
                 availableDetail: availableActiveEnergyDetail,
                 missingDetail: "影响活动分。请确认健康权限里的活动能量已开启。"
             ),
             HealthSignalCoverageItem(
                 title: "睡眠",
-                isAvailable: snapshot.sleepMinutes != nil,
+                isAvailable: isHealthDataAvailable(snapshot.sleepMinutes != nil),
                 availableDetail: snapshot.sleepDisplay.note,
                 missingDetail: "影响睡眠分。需要佩戴 Apple Watch 入睡，或开启睡眠专注/睡眠记录。"
             ),
             HealthSignalCoverageItem(
                 title: "HRV",
-                isAvailable: snapshot.hrvMs != nil,
+                isAvailable: isHealthDataAvailable(snapshot.hrvMs != nil),
                 availableDetail: availableHRVDetail,
                 missingDetail: "影响恢复分。HRV 通常由 Apple Watch 在睡眠或静息时自动写入。"
             ),
             HealthSignalCoverageItem(
                 title: "静息心率",
-                isAvailable: snapshot.restingHeartRateBpm != nil,
+                isAvailable: isHealthDataAvailable(snapshot.restingHeartRateBpm != nil),
                 availableDetail: availableRestingHeartRateDetail,
                 missingDetail: "影响恢复分。请确认 Apple Watch 佩戴和心率权限。"
             ),
             HealthSignalCoverageItem(
                 title: "体重",
-                isAvailable: snapshot.weightKg != nil,
+                isAvailable: isHealthDataAvailable(snapshot.weightKg != nil),
                 availableDetail: snapshot.weightTrendDisplay.note,
                 missingDetail: "影响体重趋势。可在记录页手动补记，或连接支持 HealthKit 的体重秤。"
             ),
             HealthSignalCoverageItem(
                 title: "锻炼",
-                isAvailable: snapshot.workoutMinutes != nil,
+                isAvailable: isHealthDataAvailable(snapshot.workoutMinutes != nil),
                 availableDetail: availableWorkoutDetail,
                 missingDetail: "影响活动解释。今日未记录锻炼时仍会参考活动能量和步数。"
             )
@@ -751,7 +751,11 @@ private struct HealthDataCoverageCard: View {
     }
 
     private var coverageLabel: String {
-        "\(snapshot.availableFieldCount)/\(snapshot.expectedFieldCount)"
+        guard dataSource == .healthKit else {
+            return "待连接"
+        }
+
+        return "\(snapshot.availableFieldCount)/\(snapshot.expectedFieldCount)"
     }
 
     private var coverageColor: Color {
@@ -778,6 +782,10 @@ private struct HealthDataCoverageCard: View {
         case .sample:
             return "当前显示模拟数据。连接 Apple 健康后，这里会显示真实缺失原因。"
         }
+    }
+
+    private func isHealthDataAvailable(_ isAvailable: Bool) -> Bool {
+        dataSource == .healthKit && isAvailable
     }
 
     private var missingCount: Int {

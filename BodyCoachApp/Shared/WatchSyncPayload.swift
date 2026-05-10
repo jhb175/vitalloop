@@ -253,6 +253,30 @@ extension WatchSummaryPayload {
         )
     }
 
+    static var waitingForSync: WatchSummaryPayload {
+        WatchSummaryPayload(
+            updatedAt: Date(),
+            score: 0,
+            status: .normal,
+            headline: "等待 iPhone 同步",
+            detail: "打开 iPhone 上的 VitalLoop 后，会自动同步今日摘要。",
+            latestCheckIn: nil,
+            metrics: [
+                WatchMetricPayload(title: "心率", value: "--", unit: "bpm", kind: .heartRate, bars: []),
+                WatchMetricPayload(title: "活动", value: "--", unit: "kcal", kind: .activeEnergy, bars: []),
+                WatchMetricPayload(title: "睡眠", value: "--", unit: "h", kind: .sleep, bars: [])
+            ],
+            recommendations: [
+                WatchRecommendationPayload(
+                    type: .logging,
+                    title: "打开 iPhone 同步今日数据",
+                    rationale: "首次安装或重启后，iPhone 会把最新摘要发送到 Apple Watch。",
+                    priority: 0
+                )
+            ]
+        )
+    }
+
     private static var fallbackBars: [Double] {
         [0.34, 0.42, 0.51, 0.58, 0.66]
     }
