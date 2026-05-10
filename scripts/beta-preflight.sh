@@ -291,6 +291,8 @@ export_method="$(/usr/libexec/PlistBuddy -c "Print :method" "$EXPORT_OPTIONS_PLI
 export_team="$(/usr/libexec/PlistBuddy -c "Print :teamID" "$EXPORT_OPTIONS_PLIST" 2>/dev/null || true)"
 app_health_share_usage="$(setting_value INFOPLIST_KEY_NSHealthShareUsageDescription "$app_settings")"
 app_health_update_usage="$(setting_value INFOPLIST_KEY_NSHealthUpdateUsageDescription "$app_settings")"
+app_uses_non_exempt_encryption="$(setting_value INFOPLIST_KEY_ITSAppUsesNonExemptEncryption "$app_settings")"
+watch_uses_non_exempt_encryption="$(setting_value INFOPLIST_KEY_ITSAppUsesNonExemptEncryption "$watch_settings")"
 
 [ -n "$app_bundle_id" ] || fail "iPhone bundle id is empty"
 [ -n "$watch_bundle_id" ] || fail "Watch bundle id is empty"
@@ -330,6 +332,8 @@ grep -q "NSPrivacyAccessedAPICategoryUserDefaults" "$ROOT_DIR/BodyCoachApp/Priva
 grep -q "com.apple.developer.healthkit" "$ROOT_DIR/BodyCoachApp/BodyCoachApp.entitlements" || fail "HealthKit entitlement is missing"
 [ -n "$app_health_share_usage" ] || fail "iPhone Info.plist is missing NSHealthShareUsageDescription"
 [ -n "$app_health_update_usage" ] || fail "iPhone Info.plist is missing NSHealthUpdateUsageDescription"
+[ "$app_uses_non_exempt_encryption" = "NO" ] || fail "iPhone Info.plist must declare ITSAppUsesNonExemptEncryption = NO for export compliance"
+[ "$watch_uses_non_exempt_encryption" = "NO" ] || fail "Watch Info.plist must declare ITSAppUsesNonExemptEncryption = NO for export compliance"
 grep -q "VitalLoop is not a medical device" "$ROOT_DIR/site/privacy-policy.html" || fail "Privacy policy is missing medical disclaimer"
 grep -q "VitalLoop is not a medical device" "$ROOT_DIR/site/index.html" || fail "Marketing page is missing medical disclaimer"
 grep -q "github.com/jhb175/vitalloop/issues" "$ROOT_DIR/site/support.html" || fail "Support page is missing GitHub Issues support link"
@@ -343,6 +347,7 @@ print_check "Marketing URL: $marketing_url"
 print_check "Privacy policy URL: $privacy_url"
 print_check "Support URL: $support_url"
 print_check "Privacy manifest and HealthKit entitlement are present"
+print_check "Export compliance encryption declaration is present"
 print_check "iPhone and Apple Watch app icons are complete and opaque"
 
 if [ -z "$app_team" ] || [ -z "$watch_team" ]; then

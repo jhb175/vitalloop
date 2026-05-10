@@ -430,6 +430,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitalLoop;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "VitalLoop 需要读取活动、睡眠、心率、HRV 和体重数据，用于生成本地身体状态总结和今日建议。";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "如你主动选择保存，VitalLoop 会将体重等健康记录写入 Apple 健康，用于保持你的健康数据同步。";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -464,6 +465,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitalLoop;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "VitalLoop 需要读取活动、睡眠、心率、HRV 和体重数据，用于生成本地身体状态总结和今日建议。";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "如你主动选择保存，VitalLoop 会将体重等健康记录写入 Apple 健康，用于保持你的健康数据同步。";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -497,6 +499,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitalLoop;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.ramsey.bodycoach;
@@ -528,6 +531,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitalLoop;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.ramsey.bodycoach;
