@@ -340,7 +340,7 @@ private struct HealthConnectionCard: View {
                         HStack {
                             Image(systemName: "heart.text.square")
                                 .font(.caption.weight(.bold))
-                            Text(isConnecting ? "连接中" : "连接 Apple 健康")
+                            Text(connectButtonTitle)
                                 .font(.caption.weight(.bold))
                         }
                         .foregroundStyle(Color.bcInk)
@@ -361,10 +361,27 @@ private struct HealthConnectionCard: View {
 
     private var showsConnectButton: Bool {
         switch permissionState {
-        case .notRequested, .noData, .readFailed, .denied:
+        case .notRequested, .authorized, .partialData, .noData, .readFailed, .denied:
             return true
-        case .unavailable, .requesting, .authorized, .partialData:
+        case .unavailable, .requesting:
             return false
+        }
+    }
+
+    private var connectButtonTitle: String {
+        if isConnecting {
+            return "读取中"
+        }
+
+        switch permissionState {
+        case .authorized, .partialData, .noData, .readFailed:
+            return "重新读取 Apple 健康"
+        case .denied, .notRequested:
+            return "连接 Apple 健康"
+        case .requesting:
+            return "连接中"
+        case .unavailable:
+            return "不可用"
         }
     }
 
