@@ -9,8 +9,10 @@ struct BodyCoachRootView: View {
     let persistenceStore: BodyCoachPersistenceStore
     let reminderStore: BodyCoachReminderStore
 
+    @State private var selectedTab: BodyCoachTab = .today
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             TodayDashboardView(
                 summary: store.summary,
                 dashboardSnapshot: store.dashboardSnapshot,
@@ -29,34 +31,66 @@ struct BodyCoachRootView: View {
                 .tabItem {
                     Label("今日", systemImage: "heart.fill")
                 }
+                .tag(BodyCoachTab.today)
 
             TrendHistoryView(persistenceStore: persistenceStore)
                 .tabItem {
                     Label("趋势", systemImage: "waveform.path.ecg")
                 }
+                .tag(BodyCoachTab.trends)
 
             GoalPlanView(store: store, persistenceStore: persistenceStore)
                 .tabItem {
                     Label("计划", systemImage: "checklist")
                 }
+                .tag(BodyCoachTab.plan)
 
             CheckInLogView(store: store, persistenceStore: persistenceStore)
                 .tabItem {
                     Label("记录", systemImage: "plus")
                 }
+                .tag(BodyCoachTab.logs)
 
             SettingsPrivacyView(store: store, persistenceStore: persistenceStore, reminderStore: reminderStore)
                 .tabItem {
                     Label("设置", systemImage: "gearshape")
                 }
+                .tag(BodyCoachTab.settings)
         }
         .tint(Color.bcMint)
         .task {
             persistenceStore.configure(modelContext: modelContext)
             store.configurePersistence(persistenceStore)
             store.activateWatchSync()
+            reminderStore.activateNotificationRouting()
+        }
+        .onChange(of: reminderStore.pendingRouteRequest) { _, request in
+            handleReminderRouteRequest(request)
         }
     }
+
+    private func handleReminderRouteRequest(_ request: BodyCoachReminderRouteRequest?) {
+        guard let request else {
+            return
+        }
+
+        switch request.route {
+        case .weight, .meal:
+            selectedTab = .logs
+        case .sleep:
+            selectedTab = .today
+        }
+
+        reminderStore.consumePendingRouteRequest(id: request.id)
+    }
+}
+
+private enum BodyCoachTab: Hashable {
+    case today
+    case trends
+    case plan
+    case logs
+    case settings
 }
 
 private struct TodayDashboardView: View {
@@ -735,10 +769,21 @@ private struct SettingsPrivacyView: View {
                             setTime: reminderStore.updateMealReminderTime
                         )
 
-                        Text(notificationStatusText)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(notificationStatusColor)
-                            .fixedSize(horizontal: false, vertical: true)
+                        SettingsInfoRow(
+                            iconName: "bell.badge.fill",
+                            title: "提醒状态",
+                            detail: notificationStatusText,
+                            color: notificationStatusColor
+                        )
+
+                        if let lastReminderOpenText {
+                            SettingsInfoRow(
+                                iconName: "arrowshape.turn.up.right.fill",
+                                title: "最近跳转",
+                                detail: lastReminderOpenText,
+                                color: .bcBlue
+                            )
+                        }
                     }
 
                     SettingsSection(title: "Apple Watch 同步") {
@@ -988,18 +1033,22 @@ private struct SettingsPrivacyView: View {
 
     private var notificationStatusText: String {
         if let error = reminderStore.lastReminderError {
-            return "通知状态：\(error)"
+            return "\(reminderStore.enabledReminderSummary)。最近调度失败：\(error)"
         }
+
+        let scheduleText = reminderStore.pendingNotificationCount > 0
+            ? "系统已排队 \(reminderStore.pendingNotificationCount) 个每日提醒"
+            : "系统暂无已排队提醒"
 
         switch reminderStore.authorizationStatus {
         case .notDetermined:
-            return "通知状态：开启任一提醒后，系统会请求本地通知权限。"
+            return "\(reminderStore.enabledReminderSummary)。开启任一提醒后，系统会请求本地通知权限。"
         case .denied:
-            return "通知状态：系统通知权限未开启，需要到设置中允许 VitalLoop 通知。"
+            return "\(reminderStore.enabledReminderSummary)。系统通知权限未开启，需要到设置中允许 VitalLoop 通知。"
         case .authorized, .provisional, .ephemeral:
-            return "通知状态：已允许本地通知。"
+            return "\(reminderStore.enabledReminderSummary)。已允许本地通知，\(scheduleText)。点击体重或饮食提醒会进入记录页，点击睡眠提醒会进入今日页。"
         @unknown default:
-            return "通知状态：未知。"
+            return "\(reminderStore.enabledReminderSummary)。通知权限状态未知。"
         }
     }
 
@@ -1012,6 +1061,16 @@ private struct SettingsPrivacyView: View {
         default:
             return .bcSoft
         }
+    }
+
+    private var lastReminderOpenText: String? {
+        guard let route = reminderStore.lastOpenedReminder,
+              let openedAt = reminderStore.lastOpenedReminderAt
+        else {
+            return nil
+        }
+
+        return "\(openedAt.formatted(date: .abbreviated, time: .shortened)) 点击 \(route.displayName) 提醒，已路由到 \(route == .sleep ? "今日页" : "记录页")。"
     }
 
     private var header: some View {
@@ -1157,14 +1216,15 @@ private struct SettingsInfoRow: View {
     let iconName: String
     let title: String
     let detail: String
+    var color: Color = .bcMint
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: iconName)
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color.bcMint)
+                .foregroundStyle(color)
                 .frame(width: 32, height: 32)
-                .background(Color.bcMint.opacity(0.13), in: Circle())
+                .background(color.opacity(0.13), in: Circle())
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)

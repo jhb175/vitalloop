@@ -13,10 +13,15 @@ final class BodyCoachReminderStore {
     var mealReminderTime: Date
     private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
     private(set) var lastReminderError: String?
+    private(set) var pendingRouteRequest: BodyCoachReminderRouteRequest?
+    private(set) var lastOpenedReminder: BodyCoachReminderRoute?
+    private(set) var lastOpenedReminderAt: Date?
+    private(set) var pendingNotificationCount = 0
 
     private let defaults: UserDefaults
     private let center: UNUserNotificationCenter
     private let calendar = Calendar.current
+    private let notificationDelegate = BodyCoachNotificationDelegate()
 
     init(
         defaults: UserDefaults = .standard,
@@ -30,6 +35,37 @@ final class BodyCoachReminderStore {
         self.weightReminderTime = Self.time(for: Keys.weightTime, defaults: defaults, defaultHour: 8, defaultMinute: 30)
         self.sleepReminderTime = Self.time(for: Keys.sleepTime, defaults: defaults, defaultHour: 22, defaultMinute: 30)
         self.mealReminderTime = Self.time(for: Keys.mealTime, defaults: defaults, defaultHour: 19, defaultMinute: 30)
+
+        notificationDelegate.didOpenReminder = { [weak self] identifier, openedAt in
+            Task { @MainActor in
+                self?.handleNotificationOpen(identifier: identifier, openedAt: openedAt)
+            }
+        }
+        center.delegate = notificationDelegate
+    }
+
+    var enabledReminderCount: Int {
+        [isWeightReminderEnabled, isSleepReminderEnabled, isMealReminderEnabled].filter(\.self).count
+    }
+
+    var enabledReminderSummary: String {
+        let enabled = [
+            isWeightReminderEnabled ? BodyCoachReminderRoute.weight.displayName : nil,
+            isSleepReminderEnabled ? BodyCoachReminderRoute.sleep.displayName : nil,
+            isMealReminderEnabled ? BodyCoachReminderRoute.meal.displayName : nil
+        ].compactMap(\.self)
+
+        guard !enabled.isEmpty else {
+            return "未开启任何提醒"
+        }
+
+        return "已开启：" + enabled.joined(separator: "、")
+    }
+
+    func activateNotificationRouting() {
+        center.delegate = notificationDelegate
+        refreshAuthorizationStatus()
+        refreshPendingReminderCount()
     }
 
     func refreshAuthorizationStatus() {
@@ -44,9 +80,7 @@ final class BodyCoachReminderStore {
         defaults.set(isEnabled, forKey: Keys.weightEnabled)
         applyReminder(
             isEnabled: isEnabled,
-            identifier: Reminder.weight.identifier,
-            title: Reminder.weight.title,
-            body: Reminder.weight.body,
+            reminder: .weight,
             time: weightReminderTime
         )
     }
@@ -56,9 +90,7 @@ final class BodyCoachReminderStore {
         defaults.set(isEnabled, forKey: Keys.sleepEnabled)
         applyReminder(
             isEnabled: isEnabled,
-            identifier: Reminder.sleep.identifier,
-            title: Reminder.sleep.title,
-            body: Reminder.sleep.body,
+            reminder: .sleep,
             time: sleepReminderTime
         )
     }
@@ -68,9 +100,7 @@ final class BodyCoachReminderStore {
         defaults.set(isEnabled, forKey: Keys.mealEnabled)
         applyReminder(
             isEnabled: isEnabled,
-            identifier: Reminder.meal.identifier,
-            title: Reminder.meal.title,
-            body: Reminder.meal.body,
+            reminder: .meal,
             time: mealReminderTime
         )
     }
@@ -101,16 +131,15 @@ final class BodyCoachReminderStore {
 
     private func applyReminder(
         isEnabled: Bool,
-        identifier: String,
-        title: String,
-        body: String,
+        reminder: Reminder,
         time: Date
     ) {
         if isEnabled {
-            schedule(Reminder(identifier: identifier, title: title, body: body), at: time)
+            schedule(reminder, at: time)
         } else {
-            center.removePendingNotificationRequests(withIdentifiers: [identifier])
+            center.removePendingNotificationRequests(withIdentifiers: [reminder.identifier])
             lastReminderError = nil
+            refreshPendingReminderCount()
         }
     }
 
@@ -122,15 +151,20 @@ final class BodyCoachReminderStore {
                 content.title = reminder.title
                 content.body = reminder.body
                 content.sound = .default
+                content.userInfo = [
+                    Reminder.routeUserInfoKey: reminder.route.rawValue
+                ]
 
                 let trigger = UNCalendarNotificationTrigger(dateMatching: timeComponents(from: time), repeats: true)
                 let request = UNNotificationRequest(identifier: reminder.identifier, content: content, trigger: trigger)
                 center.removePendingNotificationRequests(withIdentifiers: [reminder.identifier])
                 try await center.add(request)
                 lastReminderError = nil
+                refreshPendingReminderCount()
             } catch {
                 lastReminderError = error.localizedDescription
                 disable(reminder)
+                refreshPendingReminderCount()
             }
 
             refreshAuthorizationStatus()
@@ -173,6 +207,34 @@ final class BodyCoachReminderStore {
         }
     }
 
+    private func refreshPendingReminderCount() {
+        Task {
+            let requests = await center.pendingNotificationRequests()
+            pendingNotificationCount = requests.filter { request in
+                Reminder.allIdentifiers.contains(request.identifier)
+            }.count
+        }
+    }
+
+    private func handleNotificationOpen(identifier: String, openedAt: Date) {
+        guard let route = BodyCoachReminderRoute(identifier: identifier) else {
+            return
+        }
+
+        lastOpenedReminder = route
+        lastOpenedReminderAt = openedAt
+        pendingRouteRequest = BodyCoachReminderRouteRequest(route: route, openedAt: openedAt)
+        lastReminderError = nil
+    }
+
+    func consumePendingRouteRequest(id: UUID) {
+        guard pendingRouteRequest?.id == id else {
+            return
+        }
+
+        pendingRouteRequest = nil
+    }
+
     private func save(_ time: Date, key: String) {
         let components = timeComponents(from: time)
         defaults.set(components.hour ?? 0, forKey: "\(key).hour")
@@ -195,6 +257,63 @@ final class BodyCoachReminderStore {
     }
 }
 
+struct BodyCoachReminderRouteRequest: Equatable, Sendable {
+    let id = UUID()
+    let route: BodyCoachReminderRoute
+    let openedAt: Date
+}
+
+enum BodyCoachReminderRoute: String, Equatable, Sendable {
+    case weight
+    case sleep
+    case meal
+
+    init?(identifier: String) {
+        switch identifier {
+        case Reminder.weight.identifier:
+            self = .weight
+        case Reminder.sleep.identifier:
+            self = .sleep
+        case Reminder.meal.identifier:
+            self = .meal
+        default:
+            return nil
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .weight:
+            return "体重记录"
+        case .sleep:
+            return "睡眠准备"
+        case .meal:
+            return "饮食简记"
+        }
+    }
+}
+
+private final class BodyCoachNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    var didOpenReminder: @Sendable (_ identifier: String, _ openedAt: Date) -> Void = { _, _ in }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        didOpenReminder(response.notification.request.identifier, Date())
+        completionHandler()
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
+    }
+}
+
 private enum ReminderError: LocalizedError {
     case authorizationDenied
 
@@ -207,24 +326,36 @@ private struct Reminder {
     let identifier: String
     let title: String
     let body: String
+    let route: BodyCoachReminderRoute
+
+    static let routeUserInfoKey = "vitalloop.reminder.route"
 
     static let weight = Reminder(
         identifier: "vitalloop.reminder.weight",
         title: "记录今日体重",
-        body: "用同一时间称重，趋势会比单日数字更有参考价值。"
+        body: "用同一时间称重，趋势会比单日数字更有参考价值。",
+        route: .weight
     )
 
     static let sleep = Reminder(
         identifier: "vitalloop.reminder.sleep",
         title: "准备睡眠恢复",
-        body: "今晚优先保证睡眠，明天的恢复分会更可靠。"
+        body: "今晚优先保证睡眠，明天的恢复分会更可靠。",
+        route: .sleep
     )
 
     static let meal = Reminder(
         identifier: "vitalloop.reminder.meal",
         title: "补一条饮食简记",
-        body: "标记今天是否偏多、偏少或高油高糖，周复盘会更清楚。"
+        body: "标记今天是否偏多、偏少或高油高糖，周复盘会更清楚。",
+        route: .meal
     )
+
+    static let allIdentifiers = [
+        Reminder.weight.identifier,
+        Reminder.sleep.identifier,
+        Reminder.meal.identifier
+    ]
 }
 
 private enum Keys {
