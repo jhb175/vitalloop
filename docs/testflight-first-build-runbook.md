@@ -12,6 +12,8 @@ Use this runbook after local verification and real-device HealthKit / Watch sync
 - `docs/real-device-healthkit-checklist.md` and `docs/real-device-watch-sync-checklist.md` have been completed for the current build.
 - `CURRENT_PROJECT_VERSION` is incremented before every new upload.
 
+For follow-up beta fixes after the first upload, use `docs/beta-fix-release-runbook.md`.
+
 ## Local Preflight
 
 ```sh
@@ -76,5 +78,5 @@ scripts/beta-preflight.sh --upload --allow-provisioning-updates \
 
 - Provisioning failure: run Xcode once, select the team in Signing & Capabilities, then rerun with `--allow-provisioning-updates`.
 - Upload authentication failure: confirm the Apple ID role or API key has App Manager, Developer, or Admin access.
-- Duplicate build number: increment `CURRENT_PROJECT_VERSION` for both iPhone and Watch targets before uploading again.
+- Duplicate build number: run `scripts/bump-build-number.sh`, then `scripts/beta-preflight.sh --skip-build` before uploading again.
 - Missing Watch app: confirm the iPhone target still has the `Embed Watch Content` build phase and the Watch target bundle id matches this runbook.

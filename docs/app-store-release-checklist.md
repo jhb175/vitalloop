@@ -122,6 +122,7 @@ Detailed screenshot order, review criteria, and official Apple references are in
 Real device HealthKit and Watch sync validation should be completed before step 6 so screenshots show connected data, Watch sync time, and a successful Watch check-in loop.
 Use `docs/testflight-first-build-runbook.md` for the first TestFlight archive, export, and upload flow.
 Use `docs/beta-feedback-triage.md` for internal beta issue intake and release-blocker triage.
+Use `docs/beta-fix-release-runbook.md` for follow-up TestFlight builds after feedback fixes.
 Use `docs/app-store-screenshot-plan.md` for screenshot capture order and review.
 
 ## TestFlight Preflight

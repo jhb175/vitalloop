@@ -167,6 +167,7 @@ Apple Watch 真机同步验收可按 `docs/real-device-watch-sync-checklist.md` 
 - App Store 元数据、权限文案、隐私营养标签提示和截图清单已整理在 `docs/app-store-release-checklist.md`。
 - 截图顺序、官方规格参考和审核前检查已整理在 `docs/app-store-screenshot-plan.md`。
 - Beta 预检脚本 `scripts/beta-preflight.sh` 已加入，CI 会先做元数据预检，再运行完整测试和双端构建。
+- Beta 修复轮流程位于 `docs/beta-fix-release-runbook.md`，构建号递增脚本为 `scripts/bump-build-number.sh`。
 
 提交 App Store Connect 前仍需要人工完成：
 

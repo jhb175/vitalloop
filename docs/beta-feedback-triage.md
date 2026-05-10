@@ -34,7 +34,7 @@ Use GitHub Issues as the first beta feedback inbox until a dedicated support sit
 4. Add one severity label and one area label.
 5. Move unclear reports to `needs-info` with the missing questions.
 6. Fix P0/P1 before expanding testers.
-7. After a fix, add the commit hash and ask the tester to recheck the next build.
+7. After a fix, follow `docs/beta-fix-release-runbook.md`, add the commit hash, and ask the tester to recheck the next build.
 
 ## Release Gate
 
