@@ -1210,7 +1210,9 @@ private struct TrendHistoryView: View {
                         TrendEmptyStateCard()
                     } else {
                         trendOverviewCard
+                        trendExplanationCard
                         trendAlertCard
+                        periodReviewCard
                         dimensionGrid
                         manualTrendGrid
                         recentSummaryList
@@ -1321,6 +1323,82 @@ private struct TrendHistoryView: View {
         }
     }
 
+    private var trendExplanationCard: some View {
+        GlassCard(cornerRadius: 24, padding: 14) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("趋势解释")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text(selectedRange.reviewTitle)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcBlue)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color.bcBlue.opacity(0.14), in: Capsule())
+                }
+
+                VStack(spacing: 8) {
+                    ForEach(trendExplanationItems) { item in
+                        TrendExplanationRow(item: item)
+                    }
+                }
+            }
+        }
+    }
+
+    private var periodReviewCard: some View {
+        GlassCard(cornerRadius: 24, padding: 14) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text(selectedRange.reviewTitle)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text(reviewQualityText)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(reviewQualityColor)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(reviewQualityColor.opacity(0.14), in: Capsule())
+                }
+
+                HStack(spacing: 10) {
+                    GoalMetric(title: "覆盖", value: "\(records.count)/\(selectedRange.days)", unit: "天", color: .bcMint)
+                    GoalMetric(title: "可信度", value: averageCompletenessText, unit: "%", color: .bcViolet)
+                    GoalMetric(title: "低恢复", value: lowRecoveryDaysText, unit: "天", color: .bcAmber)
+                }
+
+                Text(periodReviewSummary)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.bcSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(Array(periodReviewActions.enumerated()), id: \.offset) { index, action in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text("\(index + 1)")
+                                .font(.caption2.weight(.heavy))
+                                .foregroundStyle(Color(red: 0.03, green: 0.08, blue: 0.07))
+                                .frame(width: 20, height: 20)
+                                .background(Color.bcMint, in: Circle())
+
+                            Text(action)
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(Color.bcSoft)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private var dimensionGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
             TrendDimensionCard(title: "睡眠", value: averageText(\.sleepScore), detail: dimensionDetail(\.sleepScore), color: .bcAmber, records: records, keyPath: \.sleepScore)
@@ -1413,14 +1491,57 @@ private struct TrendHistoryView: View {
         String(records.filter { $0.recoveryScore < 62 || $0.sleepScore < 65 }.count)
     }
 
+    private var lowRecoveryDays: Int {
+        records.filter { $0.recoveryScore < 62 || $0.sleepScore < 65 }.count
+    }
+
+    private var averageCompleteness: Double {
+        average(records.map { Double($0.dataCompleteness) }) ?? 0
+    }
+
+    private var averageCompletenessText: String {
+        records.isEmpty ? "--" : Int(averageCompleteness.rounded()).description
+    }
+
+    private var reviewQualityText: String {
+        guard records.count >= 3 else {
+            return "待积累"
+        }
+
+        if averageCompleteness < 60 {
+            return "可信度低"
+        }
+
+        if lowRecoveryDays >= lowRecoveryAlertThreshold {
+            return "需降压"
+        }
+
+        if (average(records.map { Double($0.overallScore) }) ?? 0) >= 74 {
+            return "可维持"
+        }
+
+        return "观察中"
+    }
+
+    private var reviewQualityColor: Color {
+        switch reviewQualityText {
+        case "可维持":
+            return .bcMint
+        case "待积累":
+            return .bcMuted
+        case "可信度低", "需降压":
+            return .bcAmber
+        default:
+            return .bcBlue
+        }
+    }
+
     private var overviewSummary: String {
         guard records.count >= 3 else {
             return "趋势至少需要 3 天摘要。每天刷新一次身体总览后，这里会逐步形成可用判断。"
         }
 
         let averageOverall = average(records.map { Double($0.overallScore) }) ?? 0
-        let averageCompleteness = average(records.map { Double($0.dataCompleteness) }) ?? 0
-        let lowRecoveryDays = records.filter { $0.recoveryScore < 62 || $0.sleepScore < 65 }.count
 
         if averageCompleteness < 60 {
             return "近期数据可信度偏低，先补齐睡眠、体重和主观记录，再判断计划是否有效。"
@@ -1437,21 +1558,213 @@ private struct TrendHistoryView: View {
         return "近期状态中等，建议优先稳定睡眠和日常活动，再做目标节奏调整。"
     }
 
+    private var trendExplanationItems: [TrendExplanationItem] {
+        var items: [TrendExplanationItem] = []
+
+        if let item = overallDeltaExplanation {
+            items.append(item)
+        }
+
+        if let item = weakestDimensionExplanation {
+            items.append(item)
+        }
+
+        if let item = manualRecordExplanation {
+            items.append(item)
+        }
+
+        if averageCompleteness < 70 {
+            items.append(
+                TrendExplanationItem(
+                    iconName: "questionmark.folder.fill",
+                    title: "数据覆盖影响判断",
+                    detail: "当前平均可信度 \(Int(averageCompleteness.rounded()))%。如果缺少睡眠、体重或主观记录，趋势更适合作为方向提醒。",
+                    color: .bcAmber
+                )
+            )
+        }
+
+        if items.isEmpty {
+            items.append(
+                TrendExplanationItem(
+                    iconName: "checkmark.circle.fill",
+                    title: "主要指标稳定",
+                    detail: "综合分、恢复和睡眠没有明显异常，先维持当前计划，并继续积累每日摘要。",
+                    color: .bcMint
+                )
+            )
+        }
+
+        return Array(items.prefix(4))
+    }
+
+    private var overallDeltaExplanation: TrendExplanationItem? {
+        guard let overallDelta else {
+            return nil
+        }
+
+        if overallDelta >= 5 {
+            return TrendExplanationItem(
+                iconName: "chart.line.uptrend.xyaxis",
+                title: "综合分在改善",
+                detail: "较周期初提升 \(Int(overallDelta.rounded())) 分，通常来自恢复、睡眠或活动得分同步改善。",
+                color: .bcMint
+            )
+        }
+
+        if overallDelta <= -5 {
+            return TrendExplanationItem(
+                iconName: "chart.line.downtrend.xyaxis",
+                title: "综合分在走弱",
+                detail: "较周期初下降 \(abs(Int(overallDelta.rounded()))) 分，优先排查最近几天的睡眠、恢复和压力负荷。",
+                color: .bcAmber
+            )
+        }
+
+        return TrendExplanationItem(
+            iconName: "equal.circle.fill",
+            title: "综合分基本稳定",
+            detail: "周期内波动小于 5 分，单日变化暂不需要改变计划。",
+            color: .bcBlue
+        )
+    }
+
+    private var weakestDimensionExplanation: TrendExplanationItem? {
+        guard records.count >= 2 else {
+            return nil
+        }
+
+        let dimensions: [(title: String, first: Int, last: Int, average: Double, color: Color)] = [
+            ("睡眠", records.first?.sleepScore ?? 0, records.last?.sleepScore ?? 0, average(records.map { Double($0.sleepScore) }) ?? 0, .bcAmber),
+            ("恢复", records.first?.recoveryScore ?? 0, records.last?.recoveryScore ?? 0, average(records.map { Double($0.recoveryScore) }) ?? 0, .bcBlue),
+            ("活动", records.first?.activityScore ?? 0, records.last?.activityScore ?? 0, average(records.map { Double($0.activityScore) }) ?? 0, .bcMint),
+            ("体重趋势", records.first?.weightTrendScore ?? 0, records.last?.weightTrendScore ?? 0, average(records.map { Double($0.weightTrendScore) }) ?? 0, .bcViolet)
+        ]
+
+        guard let weakest = dimensions.min(by: { left, right in
+            let leftDrop = left.last - left.first
+            let rightDrop = right.last - right.first
+            if leftDrop == rightDrop {
+                return left.average < right.average
+            }
+
+            return leftDrop < rightDrop
+        }) else {
+            return nil
+        }
+
+        let delta = weakest.last - weakest.first
+        if delta <= -4 {
+            return TrendExplanationItem(
+                iconName: "arrow.down.circle.fill",
+                title: "\(weakest.title)拖累趋势",
+                detail: "\(weakest.title)较周期初下降 \(abs(delta)) 分，是当前最需要优先处理的方向。",
+                color: weakest.color
+            )
+        }
+
+        if weakest.average < 64 {
+            return TrendExplanationItem(
+                iconName: "exclamationmark.circle.fill",
+                title: "\(weakest.title)均值偏低",
+                detail: "\(weakest.title)平均约 \(Int(weakest.average.rounded())) 分，即使没有继续下滑，也会限制综合状态。",
+                color: weakest.color
+            )
+        }
+
+        return nil
+    }
+
+    private var manualRecordExplanation: TrendExplanationItem? {
+        if let loadDelta, loadDelta >= 1.0 {
+            return TrendExplanationItem(
+                iconName: "waveform.path.ecg",
+                title: "主观负荷上升",
+                detail: "压力、疲劳、饥饿平均值上升 \(loadDelta.oneDecimalString)，这可能解释恢复建议变保守。",
+                color: .bcAmber
+            )
+        }
+
+        if let weightDelta, abs(weightDelta) >= 0.4 {
+            return TrendExplanationItem(
+                iconName: "scalemass.fill",
+                title: "体重记录有变化",
+                detail: "手动体重较周期初 \(weightDelta >= 0 ? "上升" : "下降") \(abs(weightDelta).oneDecimalString)kg。先确认称重时间一致，再判断饮食调整。",
+                color: weightDelta <= 0 ? .bcMint : .bcViolet
+            )
+        }
+
+        return nil
+    }
+
+    private var periodReviewSummary: String {
+        guard records.count >= 3 else {
+            return "当前周期摘要不足 3 天，先连续刷新身体总览，避免用单日分数判断趋势。"
+        }
+
+        let averageOverall = average(records.map { Double($0.overallScore) }) ?? 0
+
+        if averageCompleteness < 60 {
+            return "\(selectedRange.reviewTitle)结论：数据覆盖不足，先把记录习惯补齐，再评估训练或饮食计划是否需要调整。"
+        }
+
+        if lowRecoveryDays >= lowRecoveryAlertThreshold {
+            return "\(selectedRange.reviewTitle)结论：恢复压力偏高，下一周期优先降低训练强度、固定睡眠窗口，并观察主观负荷。"
+        }
+
+        if averageOverall >= 74, (overallDelta ?? 0) >= -4 {
+            return "\(selectedRange.reviewTitle)结论：状态稳定，可以维持当前节奏，不需要因为短期体重波动改变目标。"
+        }
+
+        return "\(selectedRange.reviewTitle)结论：状态中等，下一周期先做小幅调整，重点观察睡眠、恢复和记录完整度。"
+    }
+
+    private var periodReviewActions: [String] {
+        if records.count < 3 {
+            return [
+                "每天刷新一次身体总览，至少积累 3 天摘要。",
+                "记录页补体重和主观状态，让趋势解释有足够依据。"
+            ]
+        }
+
+        var actions: [String] = []
+
+        if averageCompleteness < 70 {
+            actions.append("先补齐睡眠、体重和主观记录，提升趋势可信度。")
+        }
+
+        if lowRecoveryDays >= lowRecoveryAlertThreshold {
+            actions.append("下一周期安排 2 天低强度或休息日，避免继续堆训练量。")
+        }
+
+        if let loadDelta, loadDelta >= 1.0 {
+            actions.append("主观负荷上升时，在记录备注里标注压力、加班或饮食原因。")
+        }
+
+        if let weightDelta, weightDelta > 0.4 {
+            actions.append("体重上升先确认称重时间一致，再减少高油外卖或夜间加餐。")
+        }
+
+        if actions.isEmpty {
+            actions.append("维持当前节奏，继续观察综合分和体重趋势。")
+            actions.append("每周只调整一个变量，避免同时改训练和饮食。")
+        }
+
+        return Array(actions.prefix(3))
+    }
+
     private var trendAlerts: [TrendAlert] {
         guard records.count >= 3 else {
             return []
         }
 
         var alerts: [TrendAlert] = []
-        let averageCompleteness = average(records.map { Double($0.dataCompleteness) }) ?? 0
-        let lowRecoveryDays = records.filter { $0.recoveryScore < 62 || $0.sleepScore < 65 }.count
-
         if averageCompleteness < 65 {
             alerts.append(
                 TrendAlert(
                     iconName: "exclamationmark.triangle.fill",
                     title: "数据可信度偏低",
-                    detail: "当前周期平均完整度 \(Int(averageCompleteness.rounded()))%。先补齐睡眠、体重和主观记录，再判断计划效果。",
+                    detail: "当前周期平均完整度 \(Int(averageCompleteness.rounded()))%。原因多半是缺少睡眠、体重或主观记录，先补齐数据再判断计划效果。",
                     color: .bcAmber
                 )
             )
@@ -1462,7 +1775,7 @@ private struct TrendHistoryView: View {
                 TrendAlert(
                     iconName: "bed.double.fill",
                     title: "恢复低分偏多",
-                    detail: "\(selectedRange.displayName)内有 \(lowRecoveryDays) 天睡眠或恢复偏低，下一步先稳睡眠，不建议提高训练强度。",
+                    detail: "\(selectedRange.displayName)内有 \(lowRecoveryDays) 天睡眠或恢复偏低。常见原因是睡眠不足、压力偏高或训练密度过高，下一步先稳睡眠。",
                     color: .bcBlue
                 )
             )
@@ -1473,7 +1786,7 @@ private struct TrendHistoryView: View {
                 TrendAlert(
                     iconName: "chart.line.downtrend.xyaxis",
                     title: "综合状态下滑",
-                    detail: "综合分较周期初下降 \(abs(Int(overallDelta.rounded()))) 分，建议检查睡眠、恢复和压力记录是否连续恶化。",
+                    detail: "综合分较周期初下降 \(abs(Int(overallDelta.rounded()))) 分。优先看趋势解释里的拖累项，再决定是否调整训练或饮食。",
                     color: .bcAmber
                 )
             )
@@ -1484,7 +1797,7 @@ private struct TrendHistoryView: View {
                 TrendAlert(
                     iconName: "scalemass.fill",
                     title: "体重趋势上升",
-                    detail: "手动体重较周期初上升 \(weightDelta.oneDecimalString)kg。先确认称重时间一致，再调整饮食记录。",
+                    detail: "手动体重较周期初上升 \(weightDelta.oneDecimalString)kg。可能来自称重时间、盐分水分或热量盈余，先确认记录一致性。",
                     color: .bcViolet
                 )
             )
@@ -1495,7 +1808,7 @@ private struct TrendHistoryView: View {
                 TrendAlert(
                     iconName: "waveform.path.ecg",
                     title: "主观负荷上升",
-                    detail: "压力、疲劳、饥饿平均值上升 \(loadDelta.oneDecimalString)，优先降低训练压力并补记录原因。",
+                    detail: "压力、疲劳、饥饿平均值上升 \(loadDelta.oneDecimalString)。这通常会压低恢复判断，优先补备注原因并降低训练压力。",
                     color: .bcAmber
                 )
             )
@@ -1585,6 +1898,51 @@ private enum TrendRange: Int, CaseIterable, Identifiable {
         case .thirtyDays:
             return "30天"
         }
+    }
+
+    var reviewTitle: String {
+        switch self {
+        case .sevenDays:
+            return "周回顾"
+        case .fourteenDays:
+            return "双周回顾"
+        case .thirtyDays:
+            return "月回顾"
+        }
+    }
+}
+
+private struct TrendExplanationItem: Identifiable {
+    let id = UUID()
+    let iconName: String
+    let title: String
+    let detail: String
+    let color: Color
+}
+
+private struct TrendExplanationRow: View {
+    let item: TrendExplanationItem
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: item.iconName)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(item.color)
+                .frame(width: 30, height: 30)
+                .background(item.color.opacity(0.14), in: Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.bcInk)
+                Text(item.detail)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.bcSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
