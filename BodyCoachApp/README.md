@@ -52,6 +52,14 @@ scripts/beta-preflight.sh
 
 该脚本会检查版本号、Bundle ID、隐私政策 URL、Privacy Manifest、HealthKit entitlement，并复用 `scripts/verify-local.sh` 做完整本地构建验证。正式归档前需要先在 Xcode 选择 Apple Developer Team。
 
+TestFlight 首包归档、导出和上传流程见 `docs/testflight-first-build-runbook.md`。脚本支持：
+
+```sh
+scripts/beta-preflight.sh --archive --allow-provisioning-updates
+scripts/beta-preflight.sh --export --allow-provisioning-updates
+scripts/beta-preflight.sh --upload --allow-provisioning-updates
+```
+
 如需手动执行，可使用：
 
 ```sh

@@ -8,17 +8,32 @@ WATCH_TARGET="BodyCoachWatch"
 APP_SCHEME="BodyCoachApp"
 RUN_BUILD=1
 RUN_ARCHIVE=0
+RUN_EXPORT=0
+RUN_UPLOAD=0
+ALLOW_PROVISIONING_UPDATES=0
 ARCHIVE_PATH="$ROOT_DIR/BodyCoachApp/.build/Archives/VitalLoop.xcarchive"
+EXPORT_PATH="$ROOT_DIR/BodyCoachApp/.build/Exports/TestFlight"
+EXPORT_OPTIONS_PLIST="$ROOT_DIR/BodyCoachApp/ExportOptions-TestFlight.plist"
+API_KEY_PATH=""
+API_KEY_ID=""
+API_KEY_ISSUER_ID=""
 
 usage() {
   cat <<EOF
 Usage:
-  scripts/beta-preflight.sh [--skip-build] [--archive]
+  scripts/beta-preflight.sh [--skip-build] [--archive] [--export] [--upload]
 
 Options:
-  --skip-build  Only check release metadata and signing readiness.
-  --archive     Run a Release archive after metadata checks. Requires valid signing.
-  --help        Show this help.
+  --skip-build                  Only check release metadata and signing readiness.
+  --archive                     Run a Release archive after metadata checks. Requires valid signing.
+  --export                      Archive, then export an App Store Connect IPA locally.
+  --upload                      Archive, then upload the build to App Store Connect.
+  --allow-provisioning-updates  Allow Xcode to create or update signing assets.
+  --export-path PATH            Exported IPA/output directory. Defaults to BodyCoachApp/.build/Exports/TestFlight.
+  --api-key-path PATH           App Store Connect API private key path for xcodebuild.
+  --api-key-id ID               App Store Connect API key id.
+  --api-key-issuer-id ID        App Store Connect issuer id.
+  --help                        Show this help.
 EOF
 }
 
@@ -31,6 +46,56 @@ while [ "$#" -gt 0 ]; do
     --archive)
       RUN_ARCHIVE=1
       shift
+      ;;
+    --export)
+      RUN_ARCHIVE=1
+      RUN_EXPORT=1
+      shift
+      ;;
+    --upload)
+      RUN_ARCHIVE=1
+      RUN_UPLOAD=1
+      shift
+      ;;
+    --allow-provisioning-updates)
+      ALLOW_PROVISIONING_UPDATES=1
+      shift
+      ;;
+    --export-path)
+      [ "$#" -gt 1 ] || {
+        echo "Missing value for --export-path" >&2
+        usage >&2
+        exit 2
+      }
+      EXPORT_PATH="$2"
+      shift 2
+      ;;
+    --api-key-path)
+      [ "$#" -gt 1 ] || {
+        echo "Missing value for --api-key-path" >&2
+        usage >&2
+        exit 2
+      }
+      API_KEY_PATH="$2"
+      shift 2
+      ;;
+    --api-key-id)
+      [ "$#" -gt 1 ] || {
+        echo "Missing value for --api-key-id" >&2
+        usage >&2
+        exit 2
+      }
+      API_KEY_ID="$2"
+      shift 2
+      ;;
+    --api-key-issuer-id)
+      [ "$#" -gt 1 ] || {
+        echo "Missing value for --api-key-issuer-id" >&2
+        usage >&2
+        exit 2
+      }
+      API_KEY_ISSUER_ID="$2"
+      shift 2
       ;;
     --help|-h)
       usage
@@ -77,11 +142,47 @@ print_check() {
   printf '✓ %s\n' "$1"
 }
 
+run_xcodebuild() {
+  if [ "$ALLOW_PROVISIONING_UPDATES" -eq 1 ]; then
+    set -- "$@" -allowProvisioningUpdates
+  fi
+
+  if [ -n "$API_KEY_PATH" ]; then
+    set -- "$@" \
+      -authenticationKeyPath "$API_KEY_PATH" \
+      -authenticationKeyID "$API_KEY_ID" \
+      -authenticationKeyIssuerID "$API_KEY_ISSUER_ID"
+  fi
+
+  "$@"
+}
+
+prepare_export_options() {
+  output="$1"
+  cp "$EXPORT_OPTIONS_PLIST" "$output"
+
+  if [ "$RUN_UPLOAD" -eq 1 ]; then
+    /usr/libexec/PlistBuddy -c "Set :destination upload" "$output" >/dev/null
+  else
+    /usr/libexec/PlistBuddy -c "Set :destination export" "$output" >/dev/null
+  fi
+}
+
+[ "$RUN_EXPORT" -eq 0 ] || [ "$RUN_UPLOAD" -eq 0 ] || fail "Use either --export or --upload, not both"
+
+if [ -n "$API_KEY_PATH$API_KEY_ID$API_KEY_ISSUER_ID" ]; then
+  [ -n "$API_KEY_PATH" ] || fail "--api-key-path is required when using App Store Connect API key authentication"
+  [ -n "$API_KEY_ID" ] || fail "--api-key-id is required when using App Store Connect API key authentication"
+  [ -n "$API_KEY_ISSUER_ID" ] || fail "--api-key-issuer-id is required when using App Store Connect API key authentication"
+  require_file "$API_KEY_PATH"
+fi
+
 command -v xcodebuild >/dev/null 2>&1 || fail "xcodebuild is not available"
 require_file "$ROOT_DIR/BodyCoachApp/PrivacyInfo.xcprivacy"
 require_file "$ROOT_DIR/BodyCoachApp/BodyCoachApp.entitlements"
 require_file "$ROOT_DIR/BodyCoachApp/Shared/AppPrivacyLinks.swift"
 require_file "$ROOT_DIR/site/privacy-policy.html"
+require_file "$EXPORT_OPTIONS_PLIST"
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
@@ -100,6 +201,8 @@ watch_build_number="$(setting_value CURRENT_PROJECT_VERSION "$watch_settings")"
 app_team="$(setting_value DEVELOPMENT_TEAM "$app_settings")"
 watch_team="$(setting_value DEVELOPMENT_TEAM "$watch_settings")"
 privacy_url="$(awk -F\" '/privacyPolicyURL/ { print $2; exit }' "$ROOT_DIR/BodyCoachApp/Shared/AppPrivacyLinks.swift")"
+export_method="$(/usr/libexec/PlistBuddy -c "Print :method" "$EXPORT_OPTIONS_PLIST" 2>/dev/null || true)"
+export_team="$(/usr/libexec/PlistBuddy -c "Print :teamID" "$EXPORT_OPTIONS_PLIST" 2>/dev/null || true)"
 
 [ -n "$app_bundle_id" ] || fail "iPhone bundle id is empty"
 [ -n "$watch_bundle_id" ] || fail "Watch bundle id is empty"
@@ -122,6 +225,7 @@ grep -q "NSPrivacyTracking" "$ROOT_DIR/BodyCoachApp/PrivacyInfo.xcprivacy" || fa
 grep -q "NSPrivacyAccessedAPICategoryUserDefaults" "$ROOT_DIR/BodyCoachApp/PrivacyInfo.xcprivacy" || fail "Privacy manifest is missing UserDefaults required reason API"
 grep -q "com.apple.developer.healthkit" "$ROOT_DIR/BodyCoachApp/BodyCoachApp.entitlements" || fail "HealthKit entitlement is missing"
 grep -q "VitalLoop is not a medical device" "$ROOT_DIR/site/privacy-policy.html" || fail "Privacy policy is missing medical disclaimer"
+[ "$export_method" = "app-store-connect" ] || fail "TestFlight export method must be app-store-connect"
 
 print_check "iPhone bundle id: $app_bundle_id"
 print_check "Watch bundle id: $watch_bundle_id"
@@ -135,6 +239,14 @@ else
   print_check "Development team configured for iPhone and Watch targets"
 fi
 
+if [ "$RUN_EXPORT" -eq 1 ] || [ "$RUN_UPLOAD" -eq 1 ]; then
+  [ -n "$app_team" ] || fail "iPhone DEVELOPMENT_TEAM is required for TestFlight export or upload"
+  [ -n "$watch_team" ] || fail "Watch DEVELOPMENT_TEAM is required for TestFlight export or upload"
+  [ "$app_team" = "$watch_team" ] || fail "iPhone and Watch DEVELOPMENT_TEAM values do not match"
+  [ "$export_team" = "$app_team" ] || fail "ExportOptions-TestFlight.plist teamID does not match DEVELOPMENT_TEAM"
+  print_check "TestFlight export options ready"
+fi
+
 if [ "$RUN_BUILD" -eq 1 ]; then
   "$ROOT_DIR/scripts/verify-local.sh"
 fi
@@ -142,16 +254,33 @@ fi
 echo
 echo "Release archive command:"
 printf 'xcodebuild -project "%s" -scheme "%s" -configuration Release -destination "generic/platform=iOS" -archivePath "%s" archive\n' "$PROJECT" "$APP_SCHEME" "$ARCHIVE_PATH"
+echo
+echo "TestFlight commands:"
+echo "scripts/beta-preflight.sh --archive --allow-provisioning-updates"
+echo "scripts/beta-preflight.sh --export --allow-provisioning-updates"
+echo "scripts/beta-preflight.sh --upload --allow-provisioning-updates"
 
 if [ "$RUN_ARCHIVE" -eq 1 ]; then
   mkdir -p "$(dirname "$ARCHIVE_PATH")"
-  xcodebuild \
+  run_xcodebuild xcodebuild \
     -project "$PROJECT" \
     -scheme "$APP_SCHEME" \
     -configuration Release \
     -destination "generic/platform=iOS" \
     -archivePath "$ARCHIVE_PATH" \
     archive
+fi
+
+if [ "$RUN_EXPORT" -eq 1 ] || [ "$RUN_UPLOAD" -eq 1 ]; then
+  [ -d "$ARCHIVE_PATH" ] || fail "Archive was not created at $ARCHIVE_PATH"
+  mkdir -p "$EXPORT_PATH"
+  export_options="$tmp_dir/ExportOptions-TestFlight.plist"
+  prepare_export_options "$export_options"
+  run_xcodebuild xcodebuild \
+    -exportArchive \
+    -archivePath "$ARCHIVE_PATH" \
+    -exportPath "$EXPORT_PATH" \
+    -exportOptionsPlist "$export_options"
 fi
 
 echo

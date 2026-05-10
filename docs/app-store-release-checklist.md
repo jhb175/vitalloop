@@ -108,6 +108,7 @@ Use real devices when possible because HealthKit and WatchConnectivity behavior 
 8. Archive with a Release configuration and upload to App Store Connect.
 
 Real device HealthKit and Watch sync validation should be completed before step 6 so screenshots show connected data, Watch sync time, and a successful Watch check-in loop.
+Use `docs/testflight-first-build-runbook.md` for the first TestFlight archive, export, and upload flow.
 
 ## TestFlight Preflight
 
@@ -153,7 +154,14 @@ xcodebuild \
 The same command is printed by `scripts/beta-preflight.sh`. You can ask the script to run it directly:
 
 ```sh
-scripts/beta-preflight.sh --archive
+scripts/beta-preflight.sh --archive --allow-provisioning-updates
 ```
 
 The archive step requires valid signing and may fail until the official Apple Developer Team and provisioning are configured.
+
+For local IPA export or App Store Connect upload, use:
+
+```sh
+scripts/beta-preflight.sh --export --allow-provisioning-updates
+scripts/beta-preflight.sh --upload --allow-provisioning-updates
+```
