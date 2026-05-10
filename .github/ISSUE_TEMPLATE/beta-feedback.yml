@@ -1,0 +1,91 @@
+name: Beta feedback
+description: Report a VitalLoop TestFlight or real-device beta issue.
+title: "[Beta] "
+labels:
+  - beta-feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing VitalLoop. Do not attach raw HealthKit exports or sensitive health records. Screenshots are useful if they do not expose private details.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - HealthKit connection
+        - Apple Watch sync
+        - Reminders and notification routing
+        - Records, filters, or deletion
+        - Trends or plan review
+        - TestFlight install or launch
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the issue or confusing behavior.
+      placeholder: I tapped..., expected..., but saw...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the shortest path that triggers the issue.
+      placeholder: |
+        1. Open...
+        2. Tap...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: input
+    id: app-build
+    attributes:
+      label: App version and build
+      placeholder: 1.0 (1)
+    validations:
+      required: true
+  - type: input
+    id: iphone
+    attributes:
+      label: iPhone model and iOS version
+      placeholder: iPhone 15 Pro, iOS 26.4
+    validations:
+      required: true
+  - type: input
+    id: watch
+    attributes:
+      label: Apple Watch model and watchOS version
+      placeholder: Apple Watch Series 9, watchOS 26.4
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      options:
+        - Always
+        - Often
+        - Sometimes
+        - Once
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Screenshots or notes
+      description: Attach screenshots if useful. Redact sensitive health details first.

@@ -33,6 +33,7 @@ BodyCoachApp/BodyCoachApp.xcodeproj
 - iPhone 设置页已新增 Apple Watch 同步诊断，可查看激活状态、Watch app 安装状态、可达状态和最近同步事件。
 - Watch 首页右上角会显示最近一次同步时间；未收到 iPhone 摘要时才显示同步事件 / 等待状态。
 - GitHub Pages 隐私政策页面位于 `site/privacy-policy.html`，App 内设置页已接入预期 URL；推送到 GitHub 并启用 Pages 后才会公网生效。
+- iPhone 设置页已新增 Beta 反馈入口，指向 GitHub issue 模板；反馈分诊流程位于 `docs/beta-feedback-triage.md`。
 
 ## 本地验证命令
 

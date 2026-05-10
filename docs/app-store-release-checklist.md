@@ -43,6 +43,12 @@ Use the repository issues page until a formal support site is available:
 https://github.com/jhb175/vitalloop/issues
 ```
 
+For TestFlight feedback, use:
+
+```text
+https://github.com/jhb175/vitalloop/issues/new?template=beta-feedback.yml
+```
+
 ### Marketing URL
 
 Optional for the first beta. If required, use the GitHub Pages site root after Pages is enabled:
@@ -109,6 +115,7 @@ Use real devices when possible because HealthKit and WatchConnectivity behavior 
 
 Real device HealthKit and Watch sync validation should be completed before step 6 so screenshots show connected data, Watch sync time, and a successful Watch check-in loop.
 Use `docs/testflight-first-build-runbook.md` for the first TestFlight archive, export, and upload flow.
+Use `docs/beta-feedback-triage.md` for internal beta issue intake and release-blocker triage.
 
 ## TestFlight Preflight
 

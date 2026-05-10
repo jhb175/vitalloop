@@ -816,6 +816,43 @@ private struct SettingsPrivacyView: View {
                         )
                     }
 
+                    SettingsSection(title: "Beta 反馈") {
+                        SettingsInfoRow(
+                            iconName: "bubble.left.and.exclamationmark.bubble.right.fill",
+                            title: "反馈范围",
+                            detail: "请优先反馈 HealthKit 授权、Watch 同步、提醒跳转、记录编辑和 TestFlight 安装问题。提交前不要附带完整健康原始数据。",
+                            color: .bcBlue
+                        )
+
+                        if let url = AppPrivacyLinks.betaFeedbackURL {
+                            Link(destination: url) {
+                                HStack {
+                                    Image(systemName: "square.and.pencil")
+                                    Text("提交 Beta 反馈")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                }
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(Color.bcMint)
+                                .padding(.vertical, 4)
+                            }
+                        }
+
+                        if let url = AppPrivacyLinks.supportIssuesURL {
+                            Link(destination: url) {
+                                HStack {
+                                    Image(systemName: "tray.full.fill")
+                                    Text("查看反馈列表")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                }
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(Color.bcBlue)
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
+
                     SettingsSection(title: "隐私政策") {
                         SettingsInfoRow(
                             iconName: "doc.text.fill",

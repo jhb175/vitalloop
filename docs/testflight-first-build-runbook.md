@@ -70,6 +70,7 @@ scripts/beta-preflight.sh --upload --allow-provisioning-updates \
 5. Add beta review notes using the non-medical disclaimer from `docs/app-store-release-checklist.md`.
 6. Install from TestFlight on a paired iPhone and Apple Watch.
 7. Repeat the HealthKit and Watch sync real-device checklists against the TestFlight build.
+8. Point testers to the beta feedback template and triage new issues using `docs/beta-feedback-triage.md`.
 
 ## Common Failures
 
