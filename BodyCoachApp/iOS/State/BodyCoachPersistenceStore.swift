@@ -109,7 +109,7 @@ final class BodyCoachPersistenceStore {
             let entry = WeightEntry(weightKg: weightKg, source: source, note: note)
             modelContext.insert(entry)
             try modelContext.save()
-            recentWeightEntries = try recentWeightEntryRecords(limit: 14)
+            loadRecentLogs()
             lastPersistenceError = nil
         } catch {
             lastPersistenceError = error.localizedDescription
@@ -126,7 +126,7 @@ final class BodyCoachPersistenceStore {
             let entry = MealLogEntry(kind: kind, note: note, source: source)
             modelContext.insert(entry)
             try modelContext.save()
-            recentMealLogs = try recentMealLogRecords(limit: 14)
+            loadRecentLogs()
             lastPersistenceError = nil
         } catch {
             lastPersistenceError = error.localizedDescription
@@ -175,7 +175,7 @@ final class BodyCoachPersistenceStore {
             record.dataCompleteness = summary.score.dataCompleteness
 
             try modelContext.save()
-            recentDailySummaries = try recentDailySummaryRecords(limit: 14)
+            recentDailySummaries = try recentDailySummaryRecords(limit: 30)
             lastPersistenceError = nil
         } catch {
             lastPersistenceError = error.localizedDescription
@@ -200,7 +200,7 @@ final class BodyCoachPersistenceStore {
         }
     }
 
-    func loadRecentDailySummaries(limit: Int = 14) {
+    func loadRecentDailySummaries(limit: Int = 30) {
         do {
             recentDailySummaries = try recentDailySummaryRecords(limit: limit)
             lastPersistenceError = nil
@@ -209,7 +209,7 @@ final class BodyCoachPersistenceStore {
         }
     }
 
-    func loadRecentLogs(limit: Int = 14) {
+    func loadRecentLogs(limit: Int = 30) {
         do {
             recentSubjectiveCheckIns = try recentSubjectiveCheckInRecords(limit: limit)
             recentWeightEntries = try recentWeightEntryRecords(limit: limit)
@@ -219,6 +219,85 @@ final class BodyCoachPersistenceStore {
         } catch {
             lastPersistenceError = error.localizedDescription
         }
+    }
+
+    func updateSubjectiveCheckIn(id: UUID, stress: Int, fatigue: Int, hunger: Int) {
+        guard let modelContext else {
+            lastPersistenceError = "本地存储尚未就绪"
+            return
+        }
+
+        do {
+            guard let record = try existingCheckIn(id: id) else {
+                lastPersistenceError = "没有找到要编辑的主观记录"
+                return
+            }
+
+            record.stress = SubjectiveCheckIn.clamped(stress)
+            record.fatigue = SubjectiveCheckIn.clamped(fatigue)
+            record.hunger = SubjectiveCheckIn.clamped(hunger)
+            try modelContext.save()
+            loadRecentLogs()
+            lastPersistenceError = nil
+        } catch {
+            lastPersistenceError = error.localizedDescription
+        }
+    }
+
+    func updateWeightEntry(id: UUID, weightKg: Double, note: String) {
+        guard let modelContext else {
+            lastPersistenceError = "本地存储尚未就绪"
+            return
+        }
+
+        do {
+            guard let record = try existingWeightEntry(id: id) else {
+                lastPersistenceError = "没有找到要编辑的体重记录"
+                return
+            }
+
+            record.weightKg = weightKg
+            record.note = note
+            try modelContext.save()
+            loadRecentLogs()
+            lastPersistenceError = nil
+        } catch {
+            lastPersistenceError = error.localizedDescription
+        }
+    }
+
+    func updateMealLog(id: UUID, kind: MealLogKind, note: String) {
+        guard let modelContext else {
+            lastPersistenceError = "本地存储尚未就绪"
+            return
+        }
+
+        do {
+            guard let record = try existingMealLog(id: id) else {
+                lastPersistenceError = "没有找到要编辑的饮食记录"
+                return
+            }
+
+            record.kind = kind
+            record.note = note
+            try modelContext.save()
+            loadRecentLogs()
+            lastPersistenceError = nil
+        } catch {
+            lastPersistenceError = error.localizedDescription
+        }
+    }
+
+    func deleteSubjectiveCheckIn(id: UUID) {
+        deleteRecord(id: id, fetch: existingCheckIn)
+    }
+
+    func deleteWeightEntry(id: UUID) {
+        deleteRecord(id: id, fetch: existingWeightEntry)
+    }
+
+    func deleteMealLog(id: UUID) {
+        deleteRecord(id: id, fetch: existingMealLog)
     }
 
     func deleteLocalData() {
@@ -246,6 +325,27 @@ final class BodyCoachPersistenceStore {
         }
     }
 
+    private func deleteRecord<Model: PersistentModel>(id: UUID, fetch: (UUID) throws -> Model?) {
+        guard let modelContext else {
+            lastPersistenceError = "本地存储尚未就绪"
+            return
+        }
+
+        do {
+            guard let record = try fetch(id) else {
+                lastPersistenceError = "没有找到要删除的记录"
+                return
+            }
+
+            modelContext.delete(record)
+            try modelContext.save()
+            loadRecentLogs()
+            lastPersistenceError = nil
+        } catch {
+            lastPersistenceError = error.localizedDescription
+        }
+    }
+
     private func deleteAll<Model: PersistentModel>(_ modelType: Model.Type, in modelContext: ModelContext) throws {
         let descriptor = FetchDescriptor<Model>()
         let records = try modelContext.fetch(descriptor)
@@ -258,6 +358,34 @@ final class BodyCoachPersistenceStore {
         }
 
         var descriptor = FetchDescriptor<SubjectiveCheckIn>(
+            predicate: #Predicate { record in
+                record.id == id
+            }
+        )
+        descriptor.fetchLimit = 1
+        return try modelContext.fetch(descriptor).first
+    }
+
+    private func existingWeightEntry(id: UUID) throws -> WeightEntry? {
+        guard let modelContext else {
+            return nil
+        }
+
+        var descriptor = FetchDescriptor<WeightEntry>(
+            predicate: #Predicate { record in
+                record.id == id
+            }
+        )
+        descriptor.fetchLimit = 1
+        return try modelContext.fetch(descriptor).first
+    }
+
+    private func existingMealLog(id: UUID) throws -> MealLogEntry? {
+        guard let modelContext else {
+            return nil
+        }
+
+        var descriptor = FetchDescriptor<MealLogEntry>(
             predicate: #Predicate { record in
                 record.id == id
             }

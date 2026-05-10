@@ -39,6 +39,9 @@
 		10000000000000000000001E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000116 /* Assets.xcassets */; };
 		10000000000000000000001F /* WatchAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000117 /* WatchAssets.xcassets */; };
 		100000000000000000000020 /* BodyCoachWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 100000000000000000000202 /* BodyCoachWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		100000000000000000000021 /* BodyCoachSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000118 /* BodyCoachSchema.swift */; };
+		100000000000000000000022 /* BodyCoachReminderStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000119 /* BodyCoachReminderStore.swift */; };
+		100000000000000000000023 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000011A /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,6 +92,9 @@
 		100000000000000000000115 /* AppPrivacyLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPrivacyLinks.swift; sourceTree = "<group>"; };
 		100000000000000000000116 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		100000000000000000000117 /* WatchAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WatchAssets.xcassets; sourceTree = "<group>"; };
+		100000000000000000000118 /* BodyCoachSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyCoachSchema.swift; sourceTree = "<group>"; };
+		100000000000000000000119 /* BodyCoachReminderStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyCoachReminderStore.swift; sourceTree = "<group>"; };
+		10000000000000000000011A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		100000000000000000000201 /* BodyCoachApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyCoachApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000202 /* BodyCoachWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyCoachWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -121,6 +127,7 @@
 				100000000000000000000504 /* Shared */,
 				100000000000000000000116 /* Assets.xcassets */,
 				100000000000000000000117 /* WatchAssets.xcassets */,
+				10000000000000000000011A /* PrivacyInfo.xcprivacy */,
 				100000000000000000000505 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -167,7 +174,9 @@
 			children = (
 				10000000000000000000010B /* BodySummaryStore.swift */,
 				100000000000000000000113 /* BodyCoachLocalModels.swift */,
+				100000000000000000000118 /* BodyCoachSchema.swift */,
 				100000000000000000000114 /* BodyCoachPersistenceStore.swift */,
+				100000000000000000000119 /* BodyCoachReminderStore.swift */,
 			);
 			path = State;
 			sourceTree = "<group>";
@@ -283,6 +292,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				10000000000000000000001E /* Assets.xcassets in Resources */,
+				100000000000000000000023 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -311,7 +321,9 @@
 				10000000000000000000000F /* HealthKitClient.swift in Sources */,
 				100000000000000000000010 /* BodySummaryStore.swift in Sources */,
 				10000000000000000000001B /* BodyCoachLocalModels.swift in Sources */,
+				100000000000000000000021 /* BodyCoachSchema.swift in Sources */,
 				10000000000000000000001C /* BodyCoachPersistenceStore.swift in Sources */,
+				100000000000000000000022 /* BodyCoachReminderStore.swift in Sources */,
 				100000000000000000000011 /* BodyDashboardSnapshot.swift in Sources */,
 				100000000000000000000014 /* BodyDashboardTrends.swift in Sources */,
 				100000000000000000000016 /* WatchSyncPayload.swift in Sources */,

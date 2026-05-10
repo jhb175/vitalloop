@@ -132,6 +132,13 @@ final class BodySummaryStore {
         sendWatchSummary()
     }
 
+    func refreshSubjectiveCheckInFromPersistence() {
+        persistenceStore?.loadLatestSubjectiveCheckIn()
+        latestSubjectiveCheckIn = persistenceStore?.latestSubjectiveCheckIn
+        refreshSummary()
+        sendWatchSummary()
+    }
+
     func saveFatLossGoal(
         startWeightKg: Double?,
         targetWeightKg: Double?,

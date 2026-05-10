@@ -7,6 +7,7 @@ struct BodyCoachRootView: View {
 
     let store: BodySummaryStore
     let persistenceStore: BodyCoachPersistenceStore
+    let reminderStore: BodyCoachReminderStore
 
     var body: some View {
         TabView {
@@ -18,6 +19,8 @@ struct BodyCoachRootView: View {
                 dataSource: store.dataSource,
                 lastUpdated: store.lastUpdated,
                 subjectiveCheckIn: store.latestSubjectiveCheckIn,
+                currentGoal: persistenceStore.currentGoal,
+                recentDailySummaries: persistenceStore.recentDailySummaries,
                 connectAppleHealth: {
                     await store.connectAppleHealth()
                 }
@@ -41,7 +44,7 @@ struct BodyCoachRootView: View {
                     Label("记录", systemImage: "plus")
                 }
 
-            SettingsPrivacyView(store: store, persistenceStore: persistenceStore)
+            SettingsPrivacyView(store: store, persistenceStore: persistenceStore, reminderStore: reminderStore)
                 .tabItem {
                     Label("设置", systemImage: "gearshape")
                 }
@@ -63,6 +66,8 @@ private struct TodayDashboardView: View {
     let dataSource: BodySummaryDataSource
     let lastUpdated: Date?
     let subjectiveCheckIn: WatchSubjectiveCheckInPayload?
+    let currentGoal: UserGoal?
+    let recentDailySummaries: [DailySummaryRecord]
     let connectAppleHealth: () async -> Void
 
     private let columns = [
@@ -104,6 +109,7 @@ private struct TodayDashboardView: View {
 
                     InsightTable(summary: summary, dashboardSnapshot: dashboardSnapshot)
                     RecommendationSection(recommendations: summary.recommendations)
+                    TodayPlanActionSection(actions: todayPlanActions)
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 12)
@@ -112,6 +118,14 @@ private struct TodayDashboardView: View {
             .background(BodyCoachBackground())
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+
+    private var todayPlanActions: [String] {
+        PlanActionGenerator.actions(
+            goal: currentGoal,
+            records: recentDailySummaries,
+            preferredWorkoutMinutes: currentGoal?.preferredWorkoutMinutes
+        )
     }
 
     private var header: some View {
@@ -574,6 +588,7 @@ private struct HealthSignalCoverageRow: View {
 private struct SettingsPrivacyView: View {
     let store: BodySummaryStore
     let persistenceStore: BodyCoachPersistenceStore
+    let reminderStore: BodyCoachReminderStore
 
     @State private var showsDeleteConfirmation = false
 
@@ -629,6 +644,75 @@ private struct SettingsPrivacyView: View {
                         }
                     }
 
+                    SettingsSection(title: "真机联调检查") {
+                        DeviceReadinessRow(
+                            iconName: "heart.text.square.fill",
+                            title: "Apple 健康",
+                            badge: healthReadiness.badge,
+                            detail: healthReadiness.detail,
+                            color: healthReadiness.color
+                        )
+                        DeviceReadinessRow(
+                            iconName: "applewatch",
+                            title: "Watch App",
+                            badge: watchInstallReadiness.badge,
+                            detail: watchInstallReadiness.detail,
+                            color: watchInstallReadiness.color
+                        )
+                        DeviceReadinessRow(
+                            iconName: "antenna.radiowaves.left.and.right",
+                            title: "连接通道",
+                            badge: watchReachabilityReadiness.badge,
+                            detail: watchReachabilityReadiness.detail,
+                            color: watchReachabilityReadiness.color
+                        )
+                        DeviceReadinessRow(
+                            iconName: "arrow.left.arrow.right.circle.fill",
+                            title: "同步回传",
+                            badge: syncRoundTripReadiness.badge,
+                            detail: syncRoundTripReadiness.detail,
+                            color: syncRoundTripReadiness.color
+                        )
+                    }
+
+                    SettingsSection(title: "通知提醒") {
+                        ReminderSettingsRow(
+                            iconName: "scalemass.fill",
+                            title: "体重记录",
+                            detail: "每天同一时间称重，体重趋势会更稳定。",
+                            isEnabled: reminderStore.isWeightReminderEnabled,
+                            time: reminderStore.weightReminderTime,
+                            color: .bcMint,
+                            setEnabled: reminderStore.setWeightReminderEnabled,
+                            setTime: reminderStore.updateWeightReminderTime
+                        )
+                        ReminderSettingsRow(
+                            iconName: "bed.double.fill",
+                            title: "睡眠准备",
+                            detail: "睡前提醒用于降低晚间干扰，帮助恢复分更可靠。",
+                            isEnabled: reminderStore.isSleepReminderEnabled,
+                            time: reminderStore.sleepReminderTime,
+                            color: .bcBlue,
+                            setEnabled: reminderStore.setSleepReminderEnabled,
+                            setTime: reminderStore.updateSleepReminderTime
+                        )
+                        ReminderSettingsRow(
+                            iconName: "fork.knife",
+                            title: "饮食简记",
+                            detail: "晚间补一条饮食记录，便于周复盘发现模式。",
+                            isEnabled: reminderStore.isMealReminderEnabled,
+                            time: reminderStore.mealReminderTime,
+                            color: .bcAmber,
+                            setEnabled: reminderStore.setMealReminderEnabled,
+                            setTime: reminderStore.updateMealReminderTime
+                        )
+
+                        Text(notificationStatusText)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(notificationStatusColor)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     SettingsSection(title: "Apple Watch 同步") {
                         SettingsInfoRow(
                             iconName: "applewatch",
@@ -679,6 +763,9 @@ private struct SettingsPrivacyView: View {
                 Text("这会删除 VitalLoop 保存在本机的目标、摘要、主观记录和体重记录。Apple 健康中的原始数据不会被删除。")
             }
         }
+        .task {
+            reminderStore.refreshAuthorizationStatus()
+        }
     }
 
     private var watchSyncConnectionDetail: String {
@@ -701,6 +788,172 @@ private struct SettingsPrivacyView: View {
         return diagnostics.lastEvent
     }
 
+    private var healthReadiness: DeviceReadinessState {
+        switch store.permissionState {
+        case .authorized:
+            return DeviceReadinessState(
+                badge: "通过",
+                detail: lastUpdatedDetail(prefix: "已读取 Apple 健康摘要"),
+                color: .bcMint
+            )
+        case let .partialData(available, expected):
+            return DeviceReadinessState(
+                badge: "部分",
+                detail: "已读取 \(available)/\(expected) 类健康信号，缺失项会降低评分可信度。请在系统健康权限里确认睡眠、心率、HRV、体重和活动都已允许读取。",
+                color: .bcAmber
+            )
+        case .requesting:
+            return DeviceReadinessState(
+                badge: "请求中",
+                detail: "正在等待系统健康权限面板返回结果。",
+                color: .bcBlue
+            )
+        case .noData:
+            return DeviceReadinessState(
+                badge: "无数据",
+                detail: "权限流程可用，但今日没有读到健康样本。真机验收时先佩戴 Apple Watch 产生睡眠、心率或活动数据。",
+                color: .bcAmber
+            )
+        case .denied:
+            return DeviceReadinessState(
+                badge: "未授权",
+                detail: "需要在系统设置里允许 VitalLoop 读取健康数据，再回到首页点击连接 Apple 健康。",
+                color: .bcAmber
+            )
+        case .unavailable:
+            return DeviceReadinessState(
+                badge: "不支持",
+                detail: "当前设备不支持 HealthKit，只能用模拟数据做界面预览。",
+                color: .bcMuted
+            )
+        case .notRequested:
+            return DeviceReadinessState(
+                badge: "待连接",
+                detail: "回到今日页点击连接 Apple 健康，授权后这里会显示读取结果和更新时间。",
+                color: .bcMuted
+            )
+        }
+    }
+
+    private var watchInstallReadiness: DeviceReadinessState {
+        let diagnostics = store.watchSyncDiagnostics
+        if diagnostics.isCounterpartInstalled {
+            return DeviceReadinessState(
+                badge: "已安装",
+                detail: "iPhone 已识别配对 Apple Watch 上安装了 VitalLoop Watch app。",
+                color: .bcMint
+            )
+        }
+
+        return DeviceReadinessState(
+            badge: "未安装",
+            detail: "需要通过 Xcode 或 TestFlight 同时安装 iPhone app 与 Watch app，并确认两台设备已配对。",
+            color: .bcAmber
+        )
+    }
+
+    private var watchReachabilityReadiness: DeviceReadinessState {
+        let diagnostics = store.watchSyncDiagnostics
+        if diagnostics.activationState == "已激活", diagnostics.isReachable {
+            return DeviceReadinessState(
+                badge: "可达",
+                detail: "WatchConnectivity 已激活且当前可达，可以进行即时摘要同步和主观记录回传。",
+                color: .bcMint
+            )
+        }
+
+        if diagnostics.activationState == "已激活" {
+            return DeviceReadinessState(
+                badge: "后台",
+                detail: "WatchConnectivity 已激活但当前不可达。打开两端 App 到前台，或等待系统通过后台队列同步。",
+                color: .bcBlue
+            )
+        }
+
+        return DeviceReadinessState(
+            badge: diagnostics.activationState,
+            detail: "打开 iPhone 和 Apple Watch 端 App，等待 WatchConnectivity 完成激活。",
+            color: .bcAmber
+        )
+    }
+
+    private var syncRoundTripReadiness: DeviceReadinessState {
+        let diagnostics = store.watchSyncDiagnostics
+        if let error = diagnostics.lastError, !error.isEmpty {
+            return DeviceReadinessState(
+                badge: "异常",
+                detail: "\(diagnostics.lastEvent)：\(error)",
+                color: .bcAmber
+            )
+        }
+
+        if let receivedAt = diagnostics.lastCheckInReceivedAt {
+            return DeviceReadinessState(
+                badge: "已回传",
+                detail: "iPhone 已在 \(receivedAt.formatted(date: .abbreviated, time: .shortened)) 收到 Watch 主观记录。",
+                color: .bcMint
+            )
+        }
+
+        if let acknowledgedAt = diagnostics.lastCheckInAcknowledgedAt {
+            return DeviceReadinessState(
+                badge: "已确认",
+                detail: "最近一次主观记录在 \(acknowledgedAt.formatted(date: .abbreviated, time: .shortened)) 得到对端确认。",
+                color: .bcMint
+            )
+        }
+
+        if let receivedAt = diagnostics.lastReceivedAt {
+            return DeviceReadinessState(
+                badge: "已同步",
+                detail: "最近一次摘要同步时间 \(receivedAt.formatted(date: .abbreviated, time: .shortened))。下一步在 Watch 上保存一条主观记录验证回传。",
+                color: .bcBlue
+            )
+        }
+
+        return DeviceReadinessState(
+            badge: "待验证",
+            detail: "先打开两端 App，再在 Watch 快速记录压力、疲劳和饥饿，确认 iPhone 记录页出现新记录。",
+            color: .bcMuted
+        )
+    }
+
+    private func lastUpdatedDetail(prefix: String) -> String {
+        guard let lastUpdated = store.lastUpdated else {
+            return "\(prefix)，等待下一次刷新更新时间。当前数据来源：\(store.dataSource.displayName)。"
+        }
+
+        return "\(prefix)，更新时间 \(lastUpdated.formatted(date: .abbreviated, time: .shortened))。当前数据来源：\(store.dataSource.displayName)。"
+    }
+
+    private var notificationStatusText: String {
+        if let error = reminderStore.lastReminderError {
+            return "通知状态：\(error)"
+        }
+
+        switch reminderStore.authorizationStatus {
+        case .notDetermined:
+            return "通知状态：开启任一提醒后，系统会请求本地通知权限。"
+        case .denied:
+            return "通知状态：系统通知权限未开启，需要到设置中允许 VitalLoop 通知。"
+        case .authorized, .provisional, .ephemeral:
+            return "通知状态：已允许本地通知。"
+        @unknown default:
+            return "通知状态：未知。"
+        }
+    }
+
+    private var notificationStatusColor: Color {
+        switch reminderStore.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            return .bcMint
+        case .denied:
+            return .bcAmber
+        default:
+            return .bcSoft
+        }
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: 5) {
             VitalLoopWordmark()
@@ -713,6 +966,12 @@ private struct SettingsPrivacyView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
+}
+
+private struct DeviceReadinessState {
+    let badge: String
+    let detail: String
+    let color: Color
 }
 
 private struct SettingsSection<Content: View>: View {
@@ -733,6 +992,104 @@ private struct SettingsSection<Content: View>: View {
                 content
             }
         }
+    }
+}
+
+private struct DeviceReadinessRow: View {
+    let iconName: String
+    let title: String
+    let badge: String
+    let detail: String
+    let color: Color
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: iconName)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(color)
+                .frame(width: 32, height: 32)
+                .background(color.opacity(0.13), in: Circle())
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(title)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text(badge)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(color.opacity(0.12), in: Capsule())
+                }
+
+                Text(detail)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.bcSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+private struct ReminderSettingsRow: View {
+    let iconName: String
+    let title: String
+    let detail: String
+    let isEnabled: Bool
+    let time: Date
+    let color: Color
+    let setEnabled: @MainActor @Sendable (Bool) -> Void
+    let setTime: @MainActor @Sendable (Date) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: iconName)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(color)
+                    .frame(width: 32, height: 32)
+                    .background(color.opacity(0.13), in: Circle())
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack {
+                        Text(title)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(Color.bcInk)
+
+                        Spacer()
+
+                        Toggle("", isOn: Binding(get: { isEnabled }, set: { value in setEnabled(value) }))
+                            .labelsHidden()
+                            .tint(color)
+                    }
+
+                    Text(detail)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.bcSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            if isEnabled {
+                DatePicker(
+                    "提醒时间",
+                    selection: Binding(get: { time }, set: { value in setTime(value) }),
+                    displayedComponents: .hourAndMinute
+                )
+                .datePickerStyle(.compact)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Color.bcInk)
+                .tint(color)
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -765,20 +1122,22 @@ private struct SettingsInfoRow: View {
 private struct TrendHistoryView: View {
     let persistenceStore: BodyCoachPersistenceStore
 
+    @State private var selectedRange: TrendRange = .fourteenDays
+
     private var records: [DailySummaryRecord] {
-        Array(persistenceStore.recentDailySummaries.prefix(14).reversed())
+        Array(persistenceStore.recentDailySummaries.prefix(selectedRange.days).reversed())
     }
 
-    private var lastSevenRecords: [DailySummaryRecord] {
-        Array(persistenceStore.recentDailySummaries.prefix(7).reversed())
+    private var recentSummaryRecords: [DailySummaryRecord] {
+        Array(persistenceStore.recentDailySummaries.prefix(min(7, selectedRange.days)).reversed())
     }
 
     private var weightTrendRecords: [WeightEntry] {
-        Array(persistenceStore.recentWeightEntries.prefix(14).reversed())
+        Array(persistenceStore.recentWeightEntries.prefix(selectedRange.days).reversed())
     }
 
     private var checkInTrendRecords: [SubjectiveCheckIn] {
-        Array(persistenceStore.recentSubjectiveCheckIns.prefix(14).reversed())
+        Array(persistenceStore.recentSubjectiveCheckIns.prefix(selectedRange.days).reversed())
     }
 
     var body: some View {
@@ -791,6 +1150,7 @@ private struct TrendHistoryView: View {
                         TrendEmptyStateCard()
                     } else {
                         trendOverviewCard
+                        trendAlertCard
                         dimensionGrid
                         manualTrendGrid
                         recentSummaryList
@@ -804,8 +1164,8 @@ private struct TrendHistoryView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .task {
-            persistenceStore.loadRecentDailySummaries()
-            persistenceStore.loadRecentLogs()
+            persistenceStore.loadRecentDailySummaries(limit: 30)
+            persistenceStore.loadRecentLogs(limit: 30)
         }
     }
 
@@ -819,6 +1179,14 @@ private struct TrendHistoryView: View {
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(Color.bcSoft)
                 .fixedSize(horizontal: false, vertical: true)
+
+            Picker("趋势范围", selection: $selectedRange) {
+                ForEach(TrendRange.allCases) { range in
+                    Text(range.displayName).tag(range)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.top, 8)
         }
     }
 
@@ -827,7 +1195,7 @@ private struct TrendHistoryView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("14 日状态")
+                        Text("\(selectedRange.displayName)状态")
                             .font(.headline.weight(.bold))
                             .foregroundStyle(Color.bcInk)
                         Text(trendDirectionText)
@@ -837,7 +1205,7 @@ private struct TrendHistoryView: View {
 
                     Spacer()
 
-                    Text("\(records.count)/14 天")
+                    Text("\(records.count)/\(selectedRange.days) 天")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(Color.bcBlue)
                         .padding(.horizontal, 10)
@@ -847,7 +1215,7 @@ private struct TrendHistoryView: View {
 
                 ScoreTrendChart(records: records)
                     .frame(height: 132)
-                    .accessibilityLabel("14 日综合分趋势")
+                    .accessibilityLabel("\(selectedRange.displayName)综合分趋势")
 
                 HStack(spacing: 10) {
                     GoalMetric(title: "平均", value: averageText(\.overallScore), unit: "分", color: .bcMint)
@@ -859,6 +1227,36 @@ private struct TrendHistoryView: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(Color.bcSoft)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var trendAlertCard: some View {
+        if !trendAlerts.isEmpty {
+            GlassCard(cornerRadius: 24, padding: 14) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("异常提示")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(Color.bcInk)
+
+                        Spacer()
+
+                        Text("\(trendAlerts.count) 项")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.bcAmber)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(Color.bcAmber.opacity(0.14), in: Capsule())
+                    }
+
+                    VStack(spacing: 8) {
+                        ForEach(trendAlerts) { alert in
+                            TrendAlertRow(alert: alert)
+                        }
+                    }
+                }
             }
         }
     }
@@ -901,9 +1299,9 @@ private struct TrendHistoryView: View {
                         .background(Color.bcMint.opacity(0.14), in: Capsule())
                 }
 
-                ForEach(Array(lastSevenRecords.reversed().enumerated()), id: \.element.id) { index, record in
+                ForEach(Array(recentSummaryRecords.reversed().enumerated()), id: \.element.id) { index, record in
                     TrendRecordRow(record: record)
-                    if index < lastSevenRecords.count - 1 {
+                    if index < recentSummaryRecords.count - 1 {
                         Divider().overlay(Color.white.opacity(0.08))
                     }
                 }
@@ -968,8 +1366,8 @@ private struct TrendHistoryView: View {
             return "近期数据可信度偏低，先补齐睡眠、体重和主观记录，再判断计划是否有效。"
         }
 
-        if lowRecoveryDays >= 4 {
-            return "近两周恢复或睡眠低分偏多，减脂和训练计划需要先降压，不建议盲目提高活动量。"
+        if lowRecoveryDays >= lowRecoveryAlertThreshold {
+            return "当前周期恢复或睡眠低分偏多，减脂和训练计划需要先降压，不建议盲目提高活动量。"
         }
 
         if averageOverall >= 74 {
@@ -977,6 +1375,99 @@ private struct TrendHistoryView: View {
         }
 
         return "近期状态中等，建议优先稳定睡眠和日常活动，再做目标节奏调整。"
+    }
+
+    private var trendAlerts: [TrendAlert] {
+        guard records.count >= 3 else {
+            return []
+        }
+
+        var alerts: [TrendAlert] = []
+        let averageCompleteness = average(records.map { Double($0.dataCompleteness) }) ?? 0
+        let lowRecoveryDays = records.filter { $0.recoveryScore < 62 || $0.sleepScore < 65 }.count
+
+        if averageCompleteness < 65 {
+            alerts.append(
+                TrendAlert(
+                    iconName: "exclamationmark.triangle.fill",
+                    title: "数据可信度偏低",
+                    detail: "当前周期平均完整度 \(Int(averageCompleteness.rounded()))%。先补齐睡眠、体重和主观记录，再判断计划效果。",
+                    color: .bcAmber
+                )
+            )
+        }
+
+        if lowRecoveryDays >= lowRecoveryAlertThreshold {
+            alerts.append(
+                TrendAlert(
+                    iconName: "bed.double.fill",
+                    title: "恢复低分偏多",
+                    detail: "\(selectedRange.displayName)内有 \(lowRecoveryDays) 天睡眠或恢复偏低，下一步先稳睡眠，不建议提高训练强度。",
+                    color: .bcBlue
+                )
+            )
+        }
+
+        if let overallDelta, overallDelta <= -6 {
+            alerts.append(
+                TrendAlert(
+                    iconName: "chart.line.downtrend.xyaxis",
+                    title: "综合状态下滑",
+                    detail: "综合分较周期初下降 \(abs(Int(overallDelta.rounded()))) 分，建议检查睡眠、恢复和压力记录是否连续恶化。",
+                    color: .bcAmber
+                )
+            )
+        }
+
+        if let weightDelta, weightDelta > 0.5 {
+            alerts.append(
+                TrendAlert(
+                    iconName: "scalemass.fill",
+                    title: "体重趋势上升",
+                    detail: "手动体重较周期初上升 \(weightDelta.oneDecimalString)kg。先确认称重时间一致，再调整饮食记录。",
+                    color: .bcViolet
+                )
+            )
+        }
+
+        if let loadDelta, loadDelta >= 1.2 {
+            alerts.append(
+                TrendAlert(
+                    iconName: "waveform.path.ecg",
+                    title: "主观负荷上升",
+                    detail: "压力、疲劳、饥饿平均值上升 \(loadDelta.oneDecimalString)，优先降低训练压力并补记录原因。",
+                    color: .bcAmber
+                )
+            )
+        }
+
+        return Array(alerts.prefix(3))
+    }
+
+    private var lowRecoveryAlertThreshold: Int {
+        max(2, Int((Double(records.count) * 0.3).rounded(.up)))
+    }
+
+    private var weightDelta: Double? {
+        guard let first = weightTrendRecords.first?.weightKg,
+              let last = weightTrendRecords.last?.weightKg,
+              weightTrendRecords.count >= 2
+        else {
+            return nil
+        }
+
+        return last - first
+    }
+
+    private var loadDelta: Double? {
+        guard let first = checkInTrendRecords.first?.averageLoad,
+              let last = checkInTrendRecords.last?.averageLoad,
+              checkInTrendRecords.count >= 2
+        else {
+            return nil
+        }
+
+        return last - first
     }
 
     private func averageText(_ keyPath: KeyPath<DailySummaryRecord, Int>) -> String {
@@ -1009,6 +1500,65 @@ private struct TrendHistoryView: View {
         }
 
         return values.reduce(0, +) / Double(values.count)
+    }
+}
+
+private enum TrendRange: Int, CaseIterable, Identifiable {
+    case sevenDays = 7
+    case fourteenDays = 14
+    case thirtyDays = 30
+
+    var id: Int {
+        rawValue
+    }
+
+    var days: Int {
+        rawValue
+    }
+
+    var displayName: String {
+        switch self {
+        case .sevenDays:
+            return "7天"
+        case .fourteenDays:
+            return "14天"
+        case .thirtyDays:
+            return "30天"
+        }
+    }
+}
+
+private struct TrendAlert: Identifiable {
+    let id = UUID()
+    let iconName: String
+    let title: String
+    let detail: String
+    let color: Color
+}
+
+private struct TrendAlertRow: View {
+    let alert: TrendAlert
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: alert.iconName)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(alert.color)
+                .frame(width: 30, height: 30)
+                .background(alert.color.opacity(0.14), in: Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(alert.title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.bcInk)
+                Text(alert.detail)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.bcSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -1415,6 +1965,8 @@ private struct CheckInLogView: View {
     @State private var mealKind: MealLogKind = .normal
     @State private var mealNote = ""
     @State private var didLoadLatestCheckIn = false
+    @State private var logFilter: LogDateFilter = .sevenDays
+    @State private var editingLog: EditableLog?
 
     var body: some View {
         NavigationStack {
@@ -1423,10 +1975,10 @@ private struct CheckInLogView: View {
                     header
                     latestCheckInCard
                     quickEntryCard
-                    subjectiveHistoryCard
                     weightEntryCard
                     mealEntryCard
                     recentLogCard
+                    subjectiveHistoryCard
                     watchSyncCard
                     explanationCard
                 }
@@ -1443,6 +1995,13 @@ private struct CheckInLogView: View {
         .onChange(of: store.latestSubjectiveCheckIn?.id) { _, _ in
             persistenceStore.loadRecentLogs()
             loadLatestCheckIn()
+        }
+        .sheet(item: $editingLog) { log in
+            LogEditSheet(
+                log: log,
+                save: saveEditedLog,
+                delete: deleteLog
+            )
         }
     }
 
@@ -1660,19 +2219,44 @@ private struct CheckInLogView: View {
     private var recentLogCard: some View {
         GlassCard(cornerRadius: 26, padding: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("最近记录")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(Color.bcInk)
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("记录列表")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(Color.bcInk)
+                        Text("\(filteredLogRows.count) 条 · \(logFilter.displayName)")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(Color.bcMuted)
+                    }
 
-                if recentLogRows.isEmpty {
-                    Text("还没有本地记录。保存主观状态、体重或饮食简记后，会显示在这里。")
+                    Spacer()
+
+                    Picker("记录范围", selection: $logFilter) {
+                        ForEach(LogDateFilter.allCases) { filter in
+                            Text(filter.displayName).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 210)
+                }
+
+                if filteredLogRows.isEmpty {
+                    Text(emptyLogText)
                         .font(.caption.weight(.medium))
                         .foregroundStyle(Color.bcSoft)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     VStack(spacing: 8) {
-                        ForEach(recentLogRows.prefix(6)) { row in
-                            RecentLogRowView(row: row)
+                        ForEach(filteredLogRows.prefix(12)) { row in
+                            RecentLogRowView(
+                                row: row,
+                                edit: {
+                                    editingLog = row.editableLog
+                                },
+                                delete: {
+                                    deleteLog(row.editableLog)
+                                }
+                            )
                         }
                     }
                 }
@@ -1690,7 +2274,7 @@ private struct CheckInLogView: View {
 
                     Spacer()
 
-                    Text("\(persistenceStore.recentSubjectiveCheckIns.count) 条")
+                    Text("\(filteredSubjectiveCheckIns.count) 条")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(Color.bcViolet)
                         .padding(.horizontal, 9)
@@ -1698,15 +2282,23 @@ private struct CheckInLogView: View {
                         .background(Color.bcViolet.opacity(0.14), in: Capsule())
                 }
 
-                if persistenceStore.recentSubjectiveCheckIns.isEmpty {
+                if filteredSubjectiveCheckIns.isEmpty {
                     Text("当天可以记录多次。每条都会保留时间和来源，最新一条用于今日评分。")
                         .font(.caption.weight(.medium))
                         .foregroundStyle(Color.bcSoft)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     VStack(spacing: 8) {
-                        ForEach(Array(persistenceStore.recentSubjectiveCheckIns.prefix(8)), id: \.id) { record in
-                            CheckInHistoryRowView(record: record)
+                        ForEach(Array(filteredSubjectiveCheckIns.prefix(8)), id: \.id) { record in
+                            CheckInHistoryRowView(
+                                record: record,
+                                edit: {
+                                    editingLog = .subjective(record)
+                                },
+                                delete: {
+                                    deleteLog(.subjective(record))
+                                }
+                            )
                         }
                     }
                 }
@@ -1786,40 +2378,65 @@ private struct CheckInLogView: View {
         let checkIns = persistenceStore.recentSubjectiveCheckIns.map { record in
             RecentLogRow(
                 id: record.id,
+                kind: .subjective,
                 date: record.capturedAt,
                 iconName: "waveform.path.ecg",
                 title: "主观状态",
                 detail: "压力 \(record.stress) · 疲劳 \(record.fatigue) · 饥饿 \(record.hunger)",
                 source: record.source,
-                color: .bcViolet
+                color: .bcViolet,
+                editableLog: .subjective(record)
             )
         }
 
         let weights = persistenceStore.recentWeightEntries.map { record in
             RecentLogRow(
                 id: record.id,
+                kind: .weight,
                 date: record.capturedAt,
                 iconName: "scalemass.fill",
                 title: "体重",
                 detail: "\(record.weightKg.oneDecimalString) kg\(record.note.isEmpty ? "" : " · \(record.note)")",
                 source: record.source,
-                color: .bcMint
+                color: .bcMint,
+                editableLog: .weight(record)
             )
         }
 
         let meals = persistenceStore.recentMealLogs.map { record in
             RecentLogRow(
                 id: record.id,
+                kind: .meal,
                 date: record.capturedAt,
                 iconName: "fork.knife",
                 title: "饮食",
                 detail: "\(record.kind.displayName)\(record.note.isEmpty ? "" : " · \(record.note)")",
                 source: record.source,
-                color: .bcAmber
+                color: .bcAmber,
+                editableLog: .meal(record)
             )
         }
 
         return (checkIns + weights + meals).sorted { $0.date > $1.date }
+    }
+
+    private var filteredLogRows: [RecentLogRow] {
+        recentLogRows.filter { logFilter.contains($0.date) }
+    }
+
+    private var filteredSubjectiveCheckIns: [SubjectiveCheckIn] {
+        persistenceStore.recentSubjectiveCheckIns.filter { logFilter.contains($0.capturedAt) }
+    }
+
+    private var emptyLogText: String {
+        switch logFilter {
+        case .today:
+            return "今天还没有本地记录。保存主观状态、体重或饮食简记后，会显示在这里。"
+        case .sevenDays:
+            return "最近 7 天还没有本地记录。先补一条主观状态或体重记录。"
+        case .all:
+            return "还没有本地记录。保存主观状态、体重或饮食简记后，会显示在这里。"
+        }
     }
 
     private var latestStatusLabel: String {
@@ -1940,6 +2557,44 @@ private struct CheckInLogView: View {
         persistenceStore.saveMealLog(kind: mealKind, note: mealNote)
         mealNote = ""
     }
+
+    private func saveEditedLog(_ draft: EditableLogDraft) {
+        switch draft.kind {
+        case .subjective:
+            guard let stress = draft.stress, let fatigue = draft.fatigue, let hunger = draft.hunger else {
+                return
+            }
+
+            persistenceStore.updateSubjectiveCheckIn(id: draft.id, stress: stress, fatigue: fatigue, hunger: hunger)
+            store.refreshSubjectiveCheckInFromPersistence()
+            loadLatestCheckIn()
+        case .weight:
+            guard let weightKg = draft.weightKg else {
+                return
+            }
+
+            persistenceStore.updateWeightEntry(id: draft.id, weightKg: weightKg, note: draft.note)
+        case .meal:
+            guard let mealKind = draft.mealKind else {
+                return
+            }
+
+            persistenceStore.updateMealLog(id: draft.id, kind: mealKind, note: draft.note)
+        }
+    }
+
+    private func deleteLog(_ log: EditableLog) {
+        switch log {
+        case let .subjective(record):
+            persistenceStore.deleteSubjectiveCheckIn(id: record.id)
+            store.refreshSubjectiveCheckInFromPersistence()
+            loadLatestCheckIn()
+        case let .weight(record):
+            persistenceStore.deleteWeightEntry(id: record.id)
+        case let .meal(record):
+            persistenceStore.deleteMealLog(id: record.id)
+        }
+    }
 }
 
 private struct SubjectiveSliderRow: View {
@@ -1993,8 +2648,43 @@ private struct CheckInMetricPill: View {
     }
 }
 
+private enum LogDateFilter: String, CaseIterable, Identifiable {
+    case today
+    case sevenDays
+    case all
+
+    var id: String {
+        rawValue
+    }
+
+    var displayName: String {
+        switch self {
+        case .today:
+            return "今天"
+        case .sevenDays:
+            return "7天"
+        case .all:
+            return "全部"
+        }
+    }
+
+    func contains(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> Bool {
+        switch self {
+        case .today:
+            return calendar.isDate(date, inSameDayAs: now)
+        case .sevenDays:
+            let start = calendar.date(byAdding: .day, value: -6, to: calendar.startOfDay(for: now)) ?? now.addingTimeInterval(-6 * 86_400)
+            return date >= start
+        case .all:
+            return true
+        }
+    }
+}
+
 private struct CheckInHistoryRowView: View {
     let record: SubjectiveCheckIn
+    let edit: () -> Void
+    let delete: () -> Void
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
@@ -2026,6 +2716,27 @@ private struct CheckInHistoryRowView: View {
                     miniMetric(title: "饥饿", value: record.hunger)
                 }
             }
+
+            Menu {
+                Button {
+                    edit()
+                } label: {
+                    Label("编辑", systemImage: "pencil")
+                }
+
+                Button(role: .destructive) {
+                    delete()
+                } label: {
+                    Label("删除", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.bcMuted)
+                    .frame(width: 28, height: 28)
+                    .background(Color.white.opacity(0.06), in: Circle())
+            }
+            .buttonStyle(.plain)
         }
         .padding(10)
         .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -2056,18 +2767,89 @@ private struct CheckInHistoryRowView: View {
     }
 }
 
+private enum EditableLogKind {
+    case subjective
+    case weight
+    case meal
+}
+
+private enum EditableLog: Identifiable {
+    case subjective(SubjectiveCheckIn)
+    case weight(WeightEntry)
+    case meal(MealLogEntry)
+
+    var id: UUID {
+        switch self {
+        case let .subjective(record):
+            return record.id
+        case let .weight(record):
+            return record.id
+        case let .meal(record):
+            return record.id
+        }
+    }
+
+    var kind: EditableLogKind {
+        switch self {
+        case .subjective:
+            return .subjective
+        case .weight:
+            return .weight
+        case .meal:
+            return .meal
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .subjective:
+            return "编辑主观记录"
+        case .weight:
+            return "编辑体重"
+        case .meal:
+            return "编辑饮食简记"
+        }
+    }
+
+    var capturedAt: Date {
+        switch self {
+        case let .subjective(record):
+            return record.capturedAt
+        case let .weight(record):
+            return record.capturedAt
+        case let .meal(record):
+            return record.capturedAt
+        }
+    }
+}
+
+private struct EditableLogDraft {
+    let id: UUID
+    let kind: EditableLogKind
+    var stress: Int?
+    var fatigue: Int?
+    var hunger: Int?
+    var weightKg: Double?
+    var mealKind: MealLogKind?
+    var note: String
+}
+
 private struct RecentLogRow: Identifiable {
     let id: UUID
+    let kind: EditableLogKind
     let date: Date
     let iconName: String
     let title: String
     let detail: String
     let source: String
     let color: Color
+    let editableLog: EditableLog
 }
 
 private struct RecentLogRowView: View {
     let row: RecentLogRow
+    let edit: () -> Void
+    let delete: () -> Void
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
@@ -2100,9 +2882,146 @@ private struct RecentLogRowView: View {
                 .padding(.horizontal, 7)
                 .padding(.vertical, 4)
                 .background(row.color.opacity(0.12), in: Capsule())
+
+            Menu {
+                Button {
+                    edit()
+                } label: {
+                    Label("编辑", systemImage: "pencil")
+                }
+
+                Button(role: .destructive) {
+                    delete()
+                } label: {
+                    Label("删除", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.bcMuted)
+                    .frame(width: 28, height: 28)
+                    .background(Color.white.opacity(0.06), in: Circle())
+            }
+            .buttonStyle(.plain)
         }
         .padding(10)
         .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+private struct LogEditSheet: View {
+    let log: EditableLog
+    let save: (EditableLogDraft) -> Void
+    let delete: (EditableLog) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var stress = 5.0
+    @State private var fatigue = 4.0
+    @State private var hunger = 5.0
+    @State private var weightText = ""
+    @State private var note = ""
+    @State private var mealKind: MealLogKind = .normal
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Text(log.capturedAt.formatted(date: .abbreviated, time: .shortened))
+                        .foregroundStyle(.secondary)
+                }
+
+                switch log {
+                case .subjective:
+                    Section("主观状态") {
+                        SubjectiveSliderRow(title: "压力", value: $stress, color: .bcViolet)
+                        SubjectiveSliderRow(title: "疲劳", value: $fatigue, color: .bcAmber)
+                        SubjectiveSliderRow(title: "饥饿", value: $hunger, color: .bcBlue)
+                    }
+                case .weight:
+                    Section("体重") {
+                        TextField("体重 kg", text: $weightText)
+                            .keyboardType(.decimalPad)
+                        TextField("备注", text: $note, axis: .vertical)
+                            .lineLimit(2 ... 4)
+                    }
+                case .meal:
+                    Section("饮食") {
+                        Picker("类型", selection: $mealKind) {
+                            ForEach(MealLogKind.allCases, id: \.self) { kind in
+                                Text(kind.displayName).tag(kind)
+                            }
+                        }
+
+                        TextField("备注", text: $note, axis: .vertical)
+                            .lineLimit(2 ... 4)
+                    }
+                }
+
+                Section {
+                    Button("删除记录", role: .destructive) {
+                        delete(log)
+                        dismiss()
+                    }
+                }
+            }
+            .navigationTitle(log.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        save(draft)
+                        dismiss()
+                    }
+                    .disabled(!canSave)
+                }
+            }
+        }
+        .onAppear {
+            loadDraft()
+        }
+    }
+
+    private var canSave: Bool {
+        switch log {
+        case .subjective, .meal:
+            return true
+        case .weight:
+            return weightText.decimalValue != nil
+        }
+    }
+
+    private var draft: EditableLogDraft {
+        EditableLogDraft(
+            id: log.id,
+            kind: log.kind,
+            stress: Int(stress.rounded()),
+            fatigue: Int(fatigue.rounded()),
+            hunger: Int(hunger.rounded()),
+            weightKg: weightText.decimalValue,
+            mealKind: mealKind,
+            note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
+    private func loadDraft() {
+        switch log {
+        case let .subjective(record):
+            stress = Double(record.stress)
+            fatigue = Double(record.fatigue)
+            hunger = Double(record.hunger)
+        case let .weight(record):
+            weightText = record.weightKg.oneDecimalString
+            note = record.note
+        case let .meal(record):
+            mealKind = record.kind
+            note = record.note
+        }
     }
 }
 
@@ -2728,37 +3647,11 @@ private struct GoalPlanView: View {
     }
 
     private var weeklyActions: [String] {
-        guard let goal = persistenceStore.currentGoal else {
-            return [
-                "补齐当前体重和目标体重，并保存第一版减脂目标。",
-                "连续 3 天记录体重、压力、疲劳和饥饿。",
-                "连接 Apple 健康，确认睡眠和恢复信号可用。"
-            ]
-        }
-
-        let recoveryAverage = average(weeklyReviewRecords.map { Double($0.recoveryScore) })
-        let completenessAverage = average(weeklyReviewRecords.map { Double($0.dataCompleteness) }) ?? 0
-        var actions: [String] = []
-
-        if completenessAverage < 65 {
-            actions.append("优先补齐睡眠、体重和主观记录，让复盘可信度超过 65%。")
-        }
-
-        if let recoveryAverage, recoveryAverage < 62 {
-            actions.append("本周训练不加量，把睡眠时间和低强度活动先做稳定。")
-        } else {
-            let minutes = goal.preferredWorkoutMinutes ?? 30
-            actions.append("维持每次 \(minutes) 分钟以内的可持续训练，不按单日状态突然加量。")
-        }
-
-        if let weekly = goal.weeklyWeightLossTargetKg {
-            actions.append("按每周 \(weekly.oneDecimalString)kg 的节奏观察，不因单日体重波动改变目标。")
-        } else {
-            actions.append("设置一个 0.3-0.7kg 的周下降参考值，便于下周复盘。")
-        }
-
-        actions.append("记录 1 条饮食简记，标记是否偏多、偏少或高油高糖。")
-        return Array(actions.prefix(3))
+        PlanActionGenerator.actions(
+            goal: persistenceStore.currentGoal,
+            records: weeklyReviewRecords,
+            preferredWorkoutMinutes: persistenceStore.currentGoal?.preferredWorkoutMinutes
+        )
     }
 
     private func requiredWeeklyLossKg(remaining: Double, targetDate: Date?) -> Double? {
@@ -2788,6 +3681,54 @@ private struct GoalAdjustmentAdvice {
     let symbolName: String
     let color: Color
     let message: String
+}
+
+private enum PlanActionGenerator {
+    static func actions(
+        goal: UserGoal?,
+        records: [DailySummaryRecord],
+        preferredWorkoutMinutes: Int?
+    ) -> [String] {
+        guard let goal else {
+            return [
+                "补齐当前体重和目标体重，并保存第一版减脂目标。",
+                "连续 3 天记录体重、压力、疲劳和饥饿。",
+                "连接 Apple 健康，确认睡眠和恢复信号可用。"
+            ]
+        }
+
+        let recoveryAverage = average(records.map { Double($0.recoveryScore) })
+        let completenessAverage = average(records.map { Double($0.dataCompleteness) }) ?? 0
+        var actions: [String] = []
+
+        if completenessAverage < 65 {
+            actions.append("优先补齐睡眠、体重和主观记录，让复盘可信度超过 65%。")
+        }
+
+        if let recoveryAverage, recoveryAverage < 62 {
+            actions.append("今天训练不加量，把睡眠时间和低强度活动先做稳定。")
+        } else {
+            let minutes = preferredWorkoutMinutes ?? goal.preferredWorkoutMinutes ?? 30
+            actions.append("维持每次 \(minutes) 分钟以内的可持续训练，不按单日状态突然加量。")
+        }
+
+        if let weekly = goal.weeklyWeightLossTargetKg {
+            actions.append("按每周 \(weekly.oneDecimalString)kg 的节奏观察，不因单日体重波动改变目标。")
+        } else {
+            actions.append("设置一个 0.3-0.7kg 的周下降参考值，便于下周复盘。")
+        }
+
+        actions.append("记录 1 条饮食简记，标记是否偏多、偏少或高油高糖。")
+        return Array(actions.prefix(3))
+    }
+
+    private static func average(_ values: [Double]) -> Double? {
+        guard !values.isEmpty else {
+            return nil
+        }
+
+        return values.reduce(0, +) / Double(values.count)
+    }
 }
 
 private struct PlanActionRow: View {
@@ -3238,6 +4179,37 @@ private struct RecommendationSection: View {
     }
 }
 
+private struct TodayPlanActionSection: View {
+    let actions: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("今日计划行动")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Color.bcInk)
+
+                Spacer()
+
+                Text("来自计划")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.bcMint)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.bcMint.opacity(0.14), in: Capsule())
+            }
+
+            GlassCard(cornerRadius: 24, padding: 14) {
+                VStack(spacing: 8) {
+                    ForEach(Array(actions.enumerated()), id: \.offset) { index, action in
+                        PlanActionRow(index: index + 1, text: action)
+                    }
+                }
+            }
+        }
+    }
+}
+
 private struct PlaceholderSection: View {
     let title: String
     let subtitle: String
@@ -3548,13 +4520,18 @@ private extension String {
 }
 
 #Preview {
-    BodyCoachRootView(store: BodySummaryStore(), persistenceStore: BodyCoachPersistenceStore())
+    BodyCoachRootView(
+        store: BodySummaryStore(),
+        persistenceStore: BodyCoachPersistenceStore(),
+        reminderStore: BodyCoachReminderStore()
+    )
         .modelContainer(
             for: [
                 UserGoal.self,
                 DailySummaryRecord.self,
                 SubjectiveCheckIn.self,
-                WeightEntry.self
+                WeightEntry.self,
+                MealLogEntry.self
             ],
             inMemory: true
         )

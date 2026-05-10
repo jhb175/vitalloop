@@ -108,3 +108,42 @@ xcrun simctl launch <Watch device id> com.ramsey.bodycoach.watchkitapp
 - Watch 综合分与 iPhone 发出的摘要一致。
 
 如果你要在真机或模拟器上运行，需要在 Xcode 的 Signing & Capabilities 里选择你的 Apple Developer Team。
+
+## 真机联调检查
+
+iPhone 设置页已加入“真机联调检查”，用于集中确认 HealthKit、Watch 安装、连接通道和主观记录回传状态。
+
+真机验收顺序：
+
+1. 在 Xcode 中给 iPhone target 选择 Apple Developer Team，并确认 HealthKit capability 存在。
+2. 同时安装 iPhone app 与 Watch app，打开两端 App。
+3. 在 iPhone 今日页点击“连接 Apple 健康”，允许读取活动、睡眠、心率、HRV 和体重。
+4. 到 iPhone 设置页查看“真机联调检查”，Apple 健康应显示“通过”或“部分”，Watch App 应显示“已安装”。
+5. 保持两端 App 在前台，连接通道应从“后台 / 未激活”变为“可达”。
+6. 在 Watch 上保存一条压力、疲劳、饥饿记录，iPhone 设置页“同步回传”应显示“已回传”，记录页也应出现新主观记录。
+
+如果“同步回传”没有变为“已回传”，优先检查：
+
+- iPhone 与 Watch 是否是同一对已配对设备。
+- 两端 bundle id 是否分别为 `com.ramsey.bodycoach` 和 `com.ramsey.bodycoach.watchkitapp`。
+- Watch app 是否已安装到手表，而不是只安装了 iPhone app。
+- 两端 App 是否至少各启动过一次，且 WatchConnectivity 已激活。
+
+## App Store 准备清单
+
+当前工程已具备的上架前基础项：
+
+- iPhone / Watch AppIcon 已接入 asset catalog。
+- `MARKETING_VERSION = 1.0`，`CURRENT_PROJECT_VERSION = 1`。
+- iPhone target 已配置 HealthKit entitlement。
+- `PrivacyInfo.xcprivacy` 已加入 iPhone app bundle，声明不追踪、不收集 manifest 数据类型，并声明 UserDefaults required reason API 用于保存 App 内提醒设置。
+- 隐私政策静态页位于 `site/privacy-policy.html`，App 内设置页已接入预期 GitHub Pages URL。
+
+提交 App Store Connect 前仍需要人工完成：
+
+- 在 Xcode Signing & Capabilities 中选择正式 Apple Developer Team。
+- 确认 Bundle ID 是否继续使用 `com.ramsey.bodycoach` / `com.ramsey.bodycoach.watchkitapp`，或改成正式品牌域名。
+- 在 App Store Connect 填写隐私营养标签：HealthKit 摘要只在本机处理，当前版本不上传原始健康数据。
+- 启用 GitHub Pages 或提供正式隐私政策 URL，并保证 App Store Connect 与 App 内链接一致。
+- 用真机截取 iPhone 和 Apple Watch 截图，覆盖今日、趋势、计划、记录、设置与 Watch 首页。
+- 准备应用名称、Subtitle、关键词、描述、支持 URL、营销 URL 和非医疗免责声明。
