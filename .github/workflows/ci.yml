@@ -24,5 +24,8 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks
 
+      - name: Beta metadata preflight
+        run: scripts/beta-preflight.sh --skip-build
+
       - name: Verify local build
         run: scripts/verify-local.sh

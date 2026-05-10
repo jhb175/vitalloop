@@ -104,5 +104,54 @@ Use real devices when possible because HealthKit and WatchConnectivity behavior 
 4. Replace the support URL with a formal support page or confirm GitHub Issues is acceptable for beta.
 5. Fill App Store Connect privacy nutrition labels to match the local-first implementation.
 6. Capture fresh iPhone and Watch screenshots.
-7. Run `scripts/verify-local.sh`.
+7. Run `scripts/beta-preflight.sh`.
 8. Archive with a Release configuration and upload to App Store Connect.
+
+## TestFlight Preflight
+
+Run the full local beta preflight before archiving:
+
+```sh
+scripts/beta-preflight.sh
+```
+
+This checks:
+
+- iPhone and Watch bundle ids are present.
+- iPhone and Watch marketing versions match.
+- iPhone and Watch build numbers match.
+- Privacy policy URL is an `https` URL.
+- `PrivacyInfo.xcprivacy` includes tracking and UserDefaults required reason declarations.
+- HealthKit entitlement is present.
+- Privacy policy includes the non-medical disclaimer.
+- Existing unit tests and generic iOS / watchOS builds pass.
+
+For metadata-only checks, use:
+
+```sh
+scripts/beta-preflight.sh --skip-build
+```
+
+CI runs this metadata preflight before the full local verification script.
+
+## Release Archive
+
+After selecting the official Apple Developer Team and confirming bundle ids, create a Release archive:
+
+```sh
+xcodebuild \
+  -project BodyCoachApp/BodyCoachApp.xcodeproj \
+  -scheme BodyCoachApp \
+  -configuration Release \
+  -destination "generic/platform=iOS" \
+  -archivePath BodyCoachApp/.build/Archives/VitalLoop.xcarchive \
+  archive
+```
+
+The same command is printed by `scripts/beta-preflight.sh`. You can ask the script to run it directly:
+
+```sh
+scripts/beta-preflight.sh --archive
+```
+
+The archive step requires valid signing and may fail until the official Apple Developer Team and provisioning are configured.

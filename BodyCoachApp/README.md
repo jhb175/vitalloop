@@ -44,6 +44,14 @@ scripts/verify-local.sh
 
 脚本会把 SwiftPM scratch、Clang module cache 和 Xcode DerivedData 固定在仓库内 `.build` / `.clang-module-cache` 目录，便于统一清理，也避免把大量缓存写到用户目录。
 
+Beta / TestFlight 前推荐再跑发布预检：
+
+```sh
+scripts/beta-preflight.sh
+```
+
+该脚本会检查版本号、Bundle ID、隐私政策 URL、Privacy Manifest、HealthKit entitlement，并复用 `scripts/verify-local.sh` 做完整本地构建验证。正式归档前需要先在 Xcode 选择 Apple Developer Team。
+
 如需手动执行，可使用：
 
 ```sh
@@ -142,6 +150,7 @@ iPhone 设置页已加入“真机联调检查”，用于集中确认 HealthKit
 - 隐私政策静态页位于 `site/privacy-policy.html`，App 内设置页已接入预期 GitHub Pages URL。
 - App 内设置页已显示上架材料状态，明确 AppIcon、HealthKit、Privacy Manifest、隐私政策链接和非医疗说明是否已覆盖。
 - App Store 元数据、权限文案、隐私营养标签提示和截图清单已整理在 `docs/app-store-release-checklist.md`。
+- Beta 预检脚本 `scripts/beta-preflight.sh` 已加入，CI 会先做元数据预检，再运行完整测试和双端构建。
 
 提交 App Store Connect 前仍需要人工完成：
 
