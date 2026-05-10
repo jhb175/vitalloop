@@ -14,6 +14,8 @@ ALLOW_PROVISIONING_UPDATES=0
 ARCHIVE_PATH="$ROOT_DIR/BodyCoachApp/.build/Archives/VitalLoop.xcarchive"
 EXPORT_PATH="$ROOT_DIR/BodyCoachApp/.build/Exports/TestFlight"
 EXPORT_OPTIONS_PLIST="$ROOT_DIR/BodyCoachApp/ExportOptions-TestFlight.plist"
+IOS_APP_ICON_DIR="$ROOT_DIR/BodyCoachApp/Assets.xcassets/AppIcon.appiconset"
+WATCH_APP_ICON_DIR="$ROOT_DIR/BodyCoachApp/WatchAssets.xcassets/AppIcon.appiconset"
 API_KEY_PATH=""
 API_KEY_ID=""
 API_KEY_ISSUER_ID=""
@@ -168,6 +170,86 @@ prepare_export_options() {
   fi
 }
 
+png_property() {
+  property="$1"
+  file="$2"
+  sips -g "$property" "$file" 2>/dev/null | awk -v key="$property:" '$1 == key { print $2; exit }'
+}
+
+require_png_size_no_alpha() {
+  file="$1"
+  expected_width="$2"
+  expected_height="$3"
+
+  require_file "$file"
+
+  width="$(png_property pixelWidth "$file")"
+  height="$(png_property pixelHeight "$file")"
+  has_alpha="$(png_property hasAlpha "$file")"
+
+  [ "$width" = "$expected_width" ] || fail "$file must be ${expected_width}px wide, got ${width:-unknown}"
+  [ "$height" = "$expected_height" ] || fail "$file must be ${expected_height}px high, got ${height:-unknown}"
+  [ "$has_alpha" = "no" ] || fail "$file must not contain an alpha channel"
+}
+
+require_watch_rendition() {
+  asset_info="$1"
+  filename="$2"
+  grep -q "\"RenditionName\" : \"$filename\"" "$asset_info" || fail "Watch app icon $filename is not present in compiled Assets.car"
+}
+
+validate_app_icons() {
+  require_file "$IOS_APP_ICON_DIR/Contents.json"
+  require_file "$WATCH_APP_ICON_DIR/Contents.json"
+
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-iPhone-20@2x.png" 40 40
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-iPhone-20@3x.png" 60 60
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-iPhone-29@2x.png" 58 58
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-iPhone-29@3x.png" 87 87
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-iPhone-40@2x.png" 80 80
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-iPhone-40@3x.png" 120 120
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-60@2x.png" 120 120
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-60@3x.png" 180 180
+  require_png_size_no_alpha "$IOS_APP_ICON_DIR/AppIcon-1024.png" 1024 1024
+
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-24@2x.png" 48 48
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-27.5@2x.png" 55 55
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-29@2x.png" 58 58
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-29@3x.png" 87 87
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-40@2x.png" 80 80
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-44@2x.png" 88 88
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-50@2x.png" 100 100
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-86@2x.png" 172 172
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-98@2x.png" 196 196
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-108@2x.png" 216 216
+  require_png_size_no_alpha "$WATCH_APP_ICON_DIR/AppIcon-1024.png" 1024 1024
+
+  watch_compile_dir="$tmp_dir/watch-icons"
+  watch_info_plist="$tmp_dir/watch-icons-info.plist"
+  watch_asset_info="$tmp_dir/watch-assets.txt"
+  mkdir -p "$watch_compile_dir"
+  xcrun actool "$ROOT_DIR/BodyCoachApp/WatchAssets.xcassets" \
+    --compile "$watch_compile_dir" \
+    --platform watchos \
+    --minimum-deployment-target 10.0 \
+    --app-icon AppIcon \
+    --output-partial-info-plist "$watch_info_plist" \
+    --output-format human-readable-text >/dev/null
+  xcrun assetutil --info "$watch_compile_dir/Assets.car" > "$watch_asset_info"
+
+  require_watch_rendition "$watch_asset_info" "AppIcon-24@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-27.5@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-29@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-29@3x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-40@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-44@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-50@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-86@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-98@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-108@2x.png"
+  require_watch_rendition "$watch_asset_info" "AppIcon-1024.png"
+}
+
 [ "$RUN_EXPORT" -eq 0 ] || [ "$RUN_UPLOAD" -eq 0 ] || fail "Use either --export or --upload, not both"
 
 if [ -n "$API_KEY_PATH$API_KEY_ID$API_KEY_ISSUER_ID" ]; then
@@ -248,6 +330,7 @@ grep -q "VitalLoop is not a medical device" "$ROOT_DIR/site/privacy-policy.html"
 grep -q "VitalLoop is not a medical device" "$ROOT_DIR/site/index.html" || fail "Marketing page is missing medical disclaimer"
 grep -q "github.com/jhb175/vitalloop/issues" "$ROOT_DIR/site/support.html" || fail "Support page is missing GitHub Issues support link"
 [ "$export_method" = "app-store-connect" ] || fail "TestFlight export method must be app-store-connect"
+validate_app_icons
 
 print_check "iPhone bundle id: $app_bundle_id"
 print_check "Watch bundle id: $watch_bundle_id"
@@ -256,6 +339,7 @@ print_check "Marketing URL: $marketing_url"
 print_check "Privacy policy URL: $privacy_url"
 print_check "Support URL: $support_url"
 print_check "Privacy manifest and HealthKit entitlement are present"
+print_check "iPhone and Apple Watch app icons are complete and opaque"
 
 if [ -z "$app_team" ] || [ -z "$watch_team" ]; then
   echo "Warning: DEVELOPMENT_TEAM is not set for one or more targets. Set the official Apple Developer Team before archiving for TestFlight."
