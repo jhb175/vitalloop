@@ -123,6 +123,13 @@ private struct TodayDashboardView: View {
                         lastHealthReadError: lastHealthReadError,
                         connectAppleHealth: connectAppleHealth
                     )
+                    FirstRunGuideCard(
+                        permissionState: permissionState,
+                        subjectiveCheckIn: subjectiveCheckIn,
+                        currentGoal: currentGoal,
+                        recentDailySummaries: recentDailySummaries,
+                        connectAppleHealth: connectAppleHealth
+                    )
                     HealthDataCoverageCard(
                         snapshot: dashboardSnapshot,
                         permissionState: permissionState,
@@ -186,6 +193,238 @@ private struct TodayDashboardView: View {
                 .font(.system(size: 38, weight: .heavy, design: .rounded))
                 .foregroundStyle(Color.bcInk)
         }
+    }
+}
+
+private struct FirstRunGuideCard: View {
+    let permissionState: HealthPermissionState
+    let subjectiveCheckIn: WatchSubjectiveCheckInPayload?
+    let currentGoal: UserGoal?
+    let recentDailySummaries: [DailySummaryRecord]
+    let connectAppleHealth: () async -> Void
+
+    @State private var isConnecting = false
+
+    private var steps: [FirstRunGuideStep] {
+        [
+            FirstRunGuideStep(
+                title: "连接 Apple 健康",
+                detail: healthStepDetail,
+                iconName: "heart.text.square.fill",
+                isComplete: isHealthConnected,
+                color: isHealthConnected ? .bcMint : .bcAmber
+            ),
+            FirstRunGuideStep(
+                title: "同步 Apple Watch",
+                detail: watchStepDetail,
+                iconName: "applewatch",
+                isComplete: subjectiveCheckIn != nil,
+                color: subjectiveCheckIn == nil ? .bcBlue : .bcMint
+            ),
+            FirstRunGuideStep(
+                title: "设置目标",
+                detail: goalStepDetail,
+                iconName: "target",
+                isComplete: currentGoal != nil,
+                color: currentGoal == nil ? .bcViolet : .bcMint
+            ),
+            FirstRunGuideStep(
+                title: "保留每日摘要",
+                detail: summaryStepDetail,
+                iconName: "calendar.badge.clock",
+                isComplete: !recentDailySummaries.isEmpty,
+                color: recentDailySummaries.isEmpty ? .bcMuted : .bcMint
+            )
+        ]
+    }
+
+    private var completedStepCount: Int {
+        steps.filter(\.isComplete).count
+    }
+
+    private var shouldShowCard: Bool {
+        completedStepCount < steps.count
+    }
+
+    var body: some View {
+        if shouldShowCard {
+            GlassCard(cornerRadius: 24, padding: 14) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("首次设置")
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(Color.bcInk)
+                            Text("\(completedStepCount)/\(steps.count) 已完成")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(Color.bcSoft)
+                        }
+
+                        Spacer()
+
+                        Text(firstActionLabel)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(firstActionColor)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(firstActionColor.opacity(0.14), in: Capsule())
+                    }
+
+                    VStack(spacing: 8) {
+                        ForEach(steps) { step in
+                            FirstRunGuideStepRow(step: step)
+                        }
+                    }
+
+                    if showsHealthAction {
+                        Button {
+                            Task {
+                                isConnecting = true
+                                await connectAppleHealth()
+                                isConnecting = false
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "heart.text.square")
+                                Text(isConnecting ? "读取中" : "连接 Apple 健康")
+                                Spacer()
+                                Image(systemName: "arrow.right")
+                            }
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(Color.bcInk)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(Color.bcMint.opacity(0.16), in: Capsule())
+                            .overlay {
+                                Capsule()
+                                    .stroke(Color.bcMint.opacity(0.4), lineWidth: 1)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isConnecting || permissionState == .requesting)
+                    }
+                }
+            }
+        }
+    }
+
+    private var isHealthConnected: Bool {
+        switch permissionState {
+        case .authorized, .partialData:
+            return true
+        case .notRequested, .requesting, .unavailable, .denied, .noData, .readFailed:
+            return false
+        }
+    }
+
+    private var showsHealthAction: Bool {
+        switch permissionState {
+        case .notRequested, .denied, .noData, .readFailed:
+            return true
+        case .authorized, .partialData, .requesting, .unavailable:
+            return false
+        }
+    }
+
+    private var firstActionLabel: String {
+        guard let firstIncomplete = steps.first(where: { !$0.isComplete }) else {
+            return "已完成"
+        }
+
+        return firstIncomplete.title
+    }
+
+    private var firstActionColor: Color {
+        steps.first(where: { !$0.isComplete })?.color ?? .bcMint
+    }
+
+    private var healthStepDetail: String {
+        switch permissionState {
+        case .authorized:
+            return "今日健康摘要已接入。"
+        case .partialData:
+            return "已接入部分信号，缺失项会降低可信度。"
+        case .requesting:
+            return "正在等待系统权限返回。"
+        case .noData:
+            return "已授权但今天暂无样本，佩戴 Watch 或添加样本后重读。"
+        case .denied:
+            return "需要在系统设置中允许读取健康数据。"
+        case .readFailed:
+            return "读取失败，检查权限后重新读取。"
+        case .unavailable:
+            return "当前设备不支持 HealthKit。"
+        case .notRequested:
+            return "先授权读取摘要，评分会从模拟数据切换为本机数据。"
+        }
+    }
+
+    private var watchStepDetail: String {
+        guard let subjectiveCheckIn else {
+            return "在 Watch 快速记录压力、疲劳、饥饿后回到 iPhone 查看。"
+        }
+
+        return "\(subjectiveCheckIn.capturedAt.formatted(date: .omitted, time: .shortened)) 已收到 Watch 记录。"
+    }
+
+    private var goalStepDetail: String {
+        guard let currentGoal else {
+            return "到计划页填写当前体重、目标体重和目标日期。"
+        }
+
+        return "\(currentGoal.goalType.displayName)目标已保存。"
+    }
+
+    private var summaryStepDetail: String {
+        if recentDailySummaries.isEmpty {
+            return "首次刷新后会保存每日摘要，用于趋势和 7 日复盘。"
+        }
+
+        return "已有 \(recentDailySummaries.count) 条摘要用于趋势复盘。"
+    }
+}
+
+private struct FirstRunGuideStep: Identifiable {
+    let id = UUID()
+    let title: String
+    let detail: String
+    let iconName: String
+    let isComplete: Bool
+    let color: Color
+}
+
+private struct FirstRunGuideStepRow: View {
+    let step: FirstRunGuideStep
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: step.isComplete ? "checkmark.circle.fill" : step.iconName)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(step.color)
+                .frame(width: 26, height: 26)
+                .background(step.color.opacity(0.12), in: Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(step.title)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text(step.isComplete ? "完成" : "待办")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(step.color)
+                }
+
+                Text(step.detail)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(Color.bcSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
