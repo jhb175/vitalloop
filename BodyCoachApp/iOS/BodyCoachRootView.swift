@@ -17,16 +17,10 @@ struct BodyCoachRootView: View {
                 summary: store.summary,
                 dashboardSnapshot: store.dashboardSnapshot,
                 dashboardTrends: store.dashboardTrends,
-                permissionState: store.permissionState,
                 dataSource: store.dataSource,
-                lastUpdated: store.lastUpdated,
-                lastHealthReadError: store.lastHealthReadError,
                 subjectiveCheckIn: store.latestSubjectiveCheckIn,
                 currentGoal: persistenceStore.currentGoal,
-                recentDailySummaries: persistenceStore.recentDailySummaries,
-                connectAppleHealth: {
-                    await store.connectAppleHealth()
-                }
+                recentDailySummaries: persistenceStore.recentDailySummaries
             )
                 .tabItem {
                     Label("今日", systemImage: "heart.fill")
@@ -97,14 +91,10 @@ private struct TodayDashboardView: View {
     let summary: DailyBodySummary
     let dashboardSnapshot: BodyDashboardSnapshot
     let dashboardTrends: BodyDashboardTrends
-    let permissionState: HealthPermissionState
     let dataSource: BodySummaryDataSource
-    let lastUpdated: Date?
-    let lastHealthReadError: String?
     let subjectiveCheckIn: WatchSubjectiveCheckInPayload?
     let currentGoal: UserGoal?
     let recentDailySummaries: [DailySummaryRecord]
-    let connectAppleHealth: () async -> Void
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -116,25 +106,6 @@ private struct TodayDashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     header
-                    HealthConnectionCard(
-                        permissionState: permissionState,
-                        dataSource: dataSource,
-                        lastUpdated: lastUpdated,
-                        lastHealthReadError: lastHealthReadError,
-                        connectAppleHealth: connectAppleHealth
-                    )
-                    FirstRunGuideCard(
-                        permissionState: permissionState,
-                        subjectiveCheckIn: subjectiveCheckIn,
-                        currentGoal: currentGoal,
-                        recentDailySummaries: recentDailySummaries,
-                        connectAppleHealth: connectAppleHealth
-                    )
-                    HealthDataCoverageCard(
-                        snapshot: dashboardSnapshot,
-                        permissionState: permissionState,
-                        dataSource: dataSource
-                    )
                     HeroStatusCard(summary: summary, dataSource: dataSource)
                     SubjectiveCheckInCard(checkIn: subjectiveCheckIn)
 
@@ -173,25 +144,28 @@ private struct TodayDashboardView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                VitalLoopWordmark()
-                Spacer()
-                Text("晚上好")
-                    .font(.subheadline.weight(.bold))
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("今日")
+                    .font(.system(size: 28, weight: .heavy, design: .rounded))
                     .foregroundStyle(Color.bcInk)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.black.opacity(0.34), in: Capsule())
-                    .overlay {
-                        Capsule()
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    }
+                Text("身体信号 · 每日决策")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.bcSoft)
             }
 
-            Text("身体总览")
-                .font(.system(size: 38, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color.bcInk)
+            Spacer()
+
+            Text(dataSource.displayName)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(dataSource == .healthKit ? Color.bcMint : Color.bcBlue)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background((dataSource == .healthKit ? Color.bcMint : Color.bcBlue).opacity(0.14), in: Capsule())
+                .overlay {
+                    Capsule()
+                        .stroke((dataSource == .healthKit ? Color.bcMint : Color.bcBlue).opacity(0.28), lineWidth: 1)
+                }
         }
     }
 }
@@ -896,6 +870,32 @@ private struct SettingsPrivacyView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
 
+                    HealthConnectionCard(
+                        permissionState: store.permissionState,
+                        dataSource: store.dataSource,
+                        lastUpdated: store.lastUpdated,
+                        lastHealthReadError: store.lastHealthReadError,
+                        connectAppleHealth: {
+                            await store.connectAppleHealth()
+                        }
+                    )
+
+                    FirstRunGuideCard(
+                        permissionState: store.permissionState,
+                        subjectiveCheckIn: store.latestSubjectiveCheckIn,
+                        currentGoal: persistenceStore.currentGoal,
+                        recentDailySummaries: persistenceStore.recentDailySummaries,
+                        connectAppleHealth: {
+                            await store.connectAppleHealth()
+                        }
+                    )
+
+                    HealthDataCoverageCard(
+                        snapshot: store.dashboardSnapshot,
+                        permissionState: store.permissionState,
+                        dataSource: store.dataSource
+                    )
+
                     SettingsSection(title: "隐私与健康数据") {
                         SettingsInfoRow(
                             iconName: "heart.text.square.fill",
@@ -1209,7 +1209,7 @@ private struct SettingsPrivacyView: View {
         case let .denied(message):
             return DeviceReadinessState(
                 badge: "未授权",
-                detail: "需要在系统设置里允许 VitalLoop 读取健康数据，再回到首页点击连接 Apple 健康。系统返回：\(message)",
+                detail: "需要在系统设置里允许 VitalLoop 读取健康数据，再回到本页重新读取 Apple 健康。系统返回：\(message)",
                 color: .bcAmber
             )
         case .unavailable:
@@ -1221,7 +1221,7 @@ private struct SettingsPrivacyView: View {
         case .notRequested:
             return DeviceReadinessState(
                 badge: "待连接",
-                detail: "回到今日页点击连接 Apple 健康，授权后这里会显示读取结果和更新时间。",
+                detail: "在本页点击连接 Apple 健康，授权后这里会显示读取结果和更新时间。",
                 color: .bcMuted
             )
         }
