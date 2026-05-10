@@ -94,7 +94,7 @@ Required before TestFlight or App Store review:
 - Apple Watch home screen with synced score and sync time.
 - Apple Watch quick check-in screen for stress, fatigue, and hunger.
 
-Use real devices when possible because HealthKit and WatchConnectivity behavior is more representative than simulator-only screenshots.
+Use real devices when possible because HealthKit and WatchConnectivity behavior is more representative than simulator-only screenshots. Follow `docs/real-device-healthkit-checklist.md` and `docs/real-device-watch-sync-checklist.md` before capturing final beta screenshots.
 
 ## Pre-Submission Checklist
 
@@ -106,6 +106,8 @@ Use real devices when possible because HealthKit and WatchConnectivity behavior 
 6. Capture fresh iPhone and Watch screenshots.
 7. Run `scripts/beta-preflight.sh`.
 8. Archive with a Release configuration and upload to App Store Connect.
+
+Real device HealthKit and Watch sync validation should be completed before step 6 so screenshots show connected data, Watch sync time, and a successful Watch check-in loop.
 
 ## TestFlight Preflight
 

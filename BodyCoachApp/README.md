@@ -133,6 +133,8 @@ iPhone 设置页已加入“真机联调检查”，用于集中确认 HealthKit
 
 HealthKit 真机验收可按 `docs/real-device-healthkit-checklist.md` 执行。今日页在已授权、部分数据、无数据或读取失败后都会显示“重新读取 Apple 健康”，便于添加样本或修改权限后立即复测。
 
+Apple Watch 真机同步验收可按 `docs/real-device-watch-sync-checklist.md` 执行，覆盖 Watch app 安装识别、即时连接测试、摘要下发、快速记录回传和截图证据归档。
+
 如果“同步回传”没有变为“已回传”，优先检查：
 
 - iPhone 与 Watch 是否是同一对已配对设备。
