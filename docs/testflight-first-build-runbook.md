@@ -7,7 +7,7 @@ Use this runbook after local verification and real-device HealthKit / Watch sync
 - App Store Connect app record exists for VitalLoop.
 - iPhone bundle id is `com.ramsey.bodycoach`.
 - Watch bundle id is `com.ramsey.bodycoach.watchkitapp`.
-- Xcode is signed in to the Apple Developer account for team `B9RPMQ9JW7`, or an App Store Connect API key is available.
+- Xcode is signed in to the Apple Developer account for team `557Z936Z5G`, or an App Store Connect API key is available.
 - GitHub Pages is enabled and `https://jhb175.github.io/vitalloop/privacy-policy.html` is publicly reachable.
 - `docs/real-device-healthkit-checklist.md` and `docs/real-device-watch-sync-checklist.md` have been completed for the current build.
 - `CURRENT_PROJECT_VERSION` is incremented before every new upload.
