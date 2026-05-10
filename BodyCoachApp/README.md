@@ -140,6 +140,8 @@ iPhone 设置页已加入“真机联调检查”，用于集中确认 HealthKit
 - iPhone target 已配置 HealthKit entitlement。
 - `PrivacyInfo.xcprivacy` 已加入 iPhone app bundle，声明不追踪、不收集 manifest 数据类型，并声明 UserDefaults required reason API 用于保存 App 内提醒设置。
 - 隐私政策静态页位于 `site/privacy-policy.html`，App 内设置页已接入预期 GitHub Pages URL。
+- App 内设置页已显示上架材料状态，明确 AppIcon、HealthKit、Privacy Manifest、隐私政策链接和非医疗说明是否已覆盖。
+- App Store 元数据、权限文案、隐私营养标签提示和截图清单已整理在 `docs/app-store-release-checklist.md`。
 
 提交 App Store Connect 前仍需要人工完成：
 
@@ -147,5 +149,5 @@ iPhone 设置页已加入“真机联调检查”，用于集中确认 HealthKit
 - 确认 Bundle ID 是否继续使用 `com.ramsey.bodycoach` / `com.ramsey.bodycoach.watchkitapp`，或改成正式品牌域名。
 - 在 App Store Connect 填写隐私营养标签：HealthKit 摘要只在本机处理，当前版本不上传原始健康数据。
 - 启用 GitHub Pages 或提供正式隐私政策 URL，并保证 App Store Connect 与 App 内链接一致。
-- 用真机截取 iPhone 和 Apple Watch 截图，覆盖今日、趋势、计划、记录、设置与 Watch 首页。
-- 准备应用名称、Subtitle、关键词、描述、支持 URL、营销 URL 和非医疗免责声明。
+- 用真机截取 iPhone 和 Apple Watch 截图，覆盖今日、趋势、计划、记录、设置、Watch 首页与 Watch 快速记录。
+- 按 `docs/app-store-release-checklist.md` 确认应用名称、Subtitle、关键词、描述、支持 URL、营销 URL、权限说明和非医疗免责声明。

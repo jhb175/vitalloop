@@ -803,7 +803,13 @@ private struct SettingsPrivacyView: View {
                         SettingsInfoRow(
                             iconName: "doc.text.fill",
                             title: "App 内政策摘要",
-                            detail: "正式上架前需要提供可访问的隐私政策网页，并在 App Store Connect 与 App 内同时展示链接。"
+                            detail: "隐私政策 URL 已接入 App。提交前需要确认 GitHub Pages 或正式站点可公网访问，并与 App Store Connect 填写一致。"
+                        )
+                        SettingsInfoRow(
+                            iconName: "checklist.checked",
+                            title: "上架材料状态",
+                            detail: appStoreReadinessText,
+                            color: .bcBlue
                         )
 
                         if let url = AppPrivacyLinks.privacyPolicyURL {
@@ -1071,6 +1077,10 @@ private struct SettingsPrivacyView: View {
         }
 
         return "\(openedAt.formatted(date: .abbreviated, time: .shortened)) 点击 \(route.displayName) 提醒，已路由到 \(route == .sleep ? "今日页" : "记录页")。"
+    }
+
+    private var appStoreReadinessText: String {
+        "已具备 AppIcon、HealthKit 权限说明、Privacy Manifest、隐私政策链接和非医疗说明。提交前仍需真机截图、正式 Bundle ID / Team、App Store 隐私营养标签与支持联系方式。"
     }
 
     private var header: some View {
