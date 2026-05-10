@@ -863,7 +863,6 @@ private struct SettingsPrivacyView: View {
     let reminderStore: BodyCoachReminderStore
 
     @State private var showsDeleteConfirmation = false
-    @State private var showsMoreSettings = false
 
     var body: some View {
         NavigationStack {
@@ -871,76 +870,17 @@ private struct SettingsPrivacyView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
 
-                    HealthConnectionCard(
-                        permissionState: store.permissionState,
-                        dataSource: store.dataSource,
-                        lastUpdated: store.lastUpdated,
-                        lastHealthReadError: store.lastHealthReadError,
-                        connectAppleHealth: {
-                            await store.connectAppleHealth()
-                        }
-                    )
-
-                    FirstRunGuideCard(
-                        permissionState: store.permissionState,
-                        subjectiveCheckIn: store.latestSubjectiveCheckIn,
-                        currentGoal: persistenceStore.currentGoal,
-                        recentDailySummaries: persistenceStore.recentDailySummaries,
-                        connectAppleHealth: {
-                            await store.connectAppleHealth()
-                        }
-                    )
-
-                    HealthDataCoverageCard(
-                        snapshot: store.dashboardSnapshot,
-                        permissionState: store.permissionState,
-                        dataSource: store.dataSource
-                    )
-
-                    SettingsSection(title: "关键接口状态") {
-                        DeviceReadinessRow(
-                            iconName: "heart.text.square.fill",
-                            title: "Apple 健康",
-                            badge: healthReadiness.badge,
-                            detail: healthReadiness.detail,
-                            color: healthReadiness.color
+                    SettingsNavigationCard(
+                        iconName: "lock.shield.fill",
+                        title: "数据与授权",
+                        detail: "管理 Apple 健康、Apple Watch、通知授权和数据覆盖诊断。",
+                        color: .bcMint
+                    ) {
+                        DataAuthorizationSettingsView(
+                            store: store,
+                            persistenceStore: persistenceStore,
+                            reminderStore: reminderStore
                         )
-                        DeviceReadinessRow(
-                            iconName: "applewatch",
-                            title: "Watch App",
-                            badge: watchInstallReadiness.badge,
-                            detail: watchInstallReadiness.detail,
-                            color: watchInstallReadiness.color
-                        )
-                        DeviceReadinessRow(
-                            iconName: "antenna.radiowaves.left.and.right",
-                            title: "连接通道",
-                            badge: watchReachabilityReadiness.badge,
-                            detail: watchReachabilityReadiness.detail,
-                            color: watchReachabilityReadiness.color
-                        )
-                        DeviceReadinessRow(
-                            iconName: "arrow.left.arrow.right.circle.fill",
-                            title: "同步回传",
-                            badge: syncRoundTripReadiness.badge,
-                            detail: syncRoundTripReadiness.detail,
-                            color: syncRoundTripReadiness.color
-                        )
-                        DeviceReadinessRow(
-                            iconName: "bolt.horizontal.circle.fill",
-                            title: "即时测试",
-                            badge: watchConnectivityTestReadiness.badge,
-                            detail: watchConnectivityTestReadiness.detail,
-                            color: watchConnectivityTestReadiness.color
-                        )
-                        SettingsActionRow(
-                            iconName: "bolt.horizontal.circle.fill",
-                            title: "发送 Watch 连接测试",
-                            detail: "打开两端 App 后，用这一步确认即时通信链路。",
-                            color: .bcMint
-                        ) {
-                            store.runWatchConnectivityTest()
-                        }
                     }
 
                     SettingsSection(title: "通知提醒") {
@@ -974,131 +914,18 @@ private struct SettingsPrivacyView: View {
                             setEnabled: reminderStore.setMealReminderEnabled,
                             setTime: reminderStore.updateMealReminderTime
                         )
-
-                        SettingsInfoRow(
-                            iconName: "bell.badge.fill",
-                            title: "提醒状态",
-                            detail: notificationStatusText,
-                            color: notificationStatusColor
-                        )
-
-                        if let lastReminderOpenText {
-                            SettingsInfoRow(
-                                iconName: "arrowshape.turn.up.right.fill",
-                                title: "最近跳转",
-                                detail: lastReminderOpenText,
-                                color: .bcBlue
-                            )
-                        }
                     }
 
-                    SettingsDisclosureSection(
+                    SettingsNavigationCard(
+                        iconName: "ellipsis.circle.fill",
                         title: "更多与支持",
-                        detail: "隐私说明、本地数据、Beta 反馈和上架材料放在这里，日常使用时不占主视图空间。",
-                        isExpanded: $showsMoreSettings
+                        detail: "隐私说明、本地数据、Beta 反馈和上架材料。",
+                        color: .bcBlue
                     ) {
-                        SettingsSubsectionHeader(title: "隐私与健康数据")
-                        SettingsInfoRow(
-                            iconName: "heart.text.square.fill",
-                            title: "Apple 健康数据用途",
-                            detail: "VitalLoop 只读取活动、睡眠、心率、HRV 和体重摘要，用于本地生成身体状态评分和今日建议。"
+                        MoreSupportSettingsView(
+                            persistenceStore: persistenceStore,
+                            showsDeleteConfirmation: $showsDeleteConfirmation
                         )
-                        SettingsInfoRow(
-                            iconName: "lock.shield.fill",
-                            title: "本地优先",
-                            detail: "当前版本不上传原始 HealthKit 数据，也不把健康数据用于广告、营销或数据挖掘。"
-                        )
-                        SettingsInfoRow(
-                            iconName: "stethoscope",
-                            title: "非医疗诊断",
-                            detail: "评分和建议只用于生活方式参考，不能替代医生、营养师或其他专业医疗意见。"
-                        )
-
-                        SettingsSubsectionHeader(title: "本地数据")
-                        SettingsInfoRow(
-                            iconName: "externaldrive.fill",
-                            title: "保存内容",
-                            detail: "本机保存目标、每日摘要、体重记录，以及 Watch 快速记录的压力、疲劳和饥饿。"
-                        )
-                        SettingsActionRow(
-                            iconName: "trash",
-                            title: "删除本地记录",
-                            detail: "仅删除 VitalLoop 本机记录，不会删除 Apple 健康原始数据。",
-                            color: .bcAmber,
-                            role: .destructive
-                        ) {
-                            showsDeleteConfirmation = true
-                        }
-
-                        if let error = persistenceStore.lastPersistenceError {
-                            SettingsInfoRow(
-                                iconName: "exclamationmark.triangle.fill",
-                                title: "本地存储状态",
-                                detail: error,
-                                color: .bcAmber
-                            )
-                        }
-
-                        SettingsSubsectionHeader(title: "Beta 反馈")
-                        SettingsInfoRow(
-                            iconName: "bubble.left.and.exclamationmark.bubble.right.fill",
-                            title: "反馈范围",
-                            detail: "优先反馈 HealthKit 授权、Watch 同步、提醒跳转、记录编辑和 TestFlight 安装问题。提交前不要附带完整健康原始数据。",
-                            color: .bcBlue
-                        )
-
-                        if let url = AppPrivacyLinks.betaFeedbackURL {
-                            SettingsLinkRow(
-                                iconName: "square.and.pencil",
-                                title: "提交 Beta 反馈",
-                                detail: "打开当前版本的反馈入口。",
-                                destination: url,
-                                color: .bcMint
-                            )
-                        }
-
-                        if let url = AppPrivacyLinks.supportIssuesURL {
-                            SettingsLinkRow(
-                                iconName: "tray.full.fill",
-                                title: "查看反馈列表",
-                                detail: "查看已提交的问题和处理进度。",
-                                destination: url,
-                                color: .bcBlue
-                            )
-                        }
-
-                        SettingsSubsectionHeader(title: "隐私政策")
-                        SettingsInfoRow(
-                            iconName: "doc.text.fill",
-                            title: "App 内政策摘要",
-                            detail: "隐私政策、支持页和营销页已接入 GitHub Pages。提交前需要确认三条 URL 都可公网访问，并与 App Store Connect 填写一致。"
-                        )
-                        SettingsInfoRow(
-                            iconName: "checklist.checked",
-                            title: "上架材料状态",
-                            detail: appStoreReadinessText,
-                            color: .bcBlue
-                        )
-
-                        if let url = AppPrivacyLinks.privacyPolicyURL {
-                            SettingsLinkRow(
-                                iconName: "safari",
-                                title: "打开隐私政策网页",
-                                detail: "查看 TestFlight 和 App Store Connect 使用的公开政策。",
-                                destination: url,
-                                color: .bcMint
-                            )
-                        }
-
-                        if let url = AppPrivacyLinks.supportURL {
-                            SettingsLinkRow(
-                                iconName: "questionmark.circle.fill",
-                                title: "打开支持页面",
-                                detail: "查看支持说明、联系方式和已知限制。",
-                                destination: url,
-                                color: .bcBlue
-                            )
-                        }
                     }
                 }
                 .padding(.horizontal, 18)
@@ -1121,24 +948,198 @@ private struct SettingsPrivacyView: View {
         }
     }
 
-    private var watchSyncConnectionDetail: String {
-        let diagnostics = store.watchSyncDiagnostics
-        let installed = diagnostics.isCounterpartInstalled ? "Watch app 已安装" : "Watch app 未安装"
-        let reachability = diagnostics.isReachable ? "当前可达" : "当前不可达"
-        return "\(diagnostics.activationState) · \(installed) · \(reachability)"
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            VitalLoopWordmark()
+            Text("设置与隐私")
+                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                .foregroundStyle(Color.bcInk)
+            Text("管理健康数据使用、本地记录和上架前需要明确展示的隐私说明。")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(Color.bcSoft)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+private struct SettingsNavigationCard<Destination: View>: View {
+    let iconName: String
+    let title: String
+    let detail: String
+    let color: Color
+    let destination: Destination
+
+    init(iconName: String, title: String, detail: String, color: Color, @ViewBuilder destination: () -> Destination) {
+        self.iconName = iconName
+        self.title = title
+        self.detail = detail
+        self.color = color
+        self.destination = destination()
     }
 
-    private var watchSyncEventDetail: String {
-        let diagnostics = store.watchSyncDiagnostics
-        if let error = diagnostics.lastError, !error.isEmpty {
-            return "\(diagnostics.lastEvent)：\(error)"
-        }
+    var body: some View {
+        NavigationLink {
+            destination
+        } label: {
+            GlassCard(cornerRadius: 24, padding: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: iconName)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(color)
+                        .frame(width: 38, height: 38)
+                        .background(color.opacity(0.13), in: Circle())
 
-        if let receivedAt = diagnostics.lastReceivedAt {
-            return "\(diagnostics.lastEvent) · \(receivedAt.formatted(date: .omitted, time: .shortened))"
-        }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(Color.bcInk)
+                        Text(detail)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(Color.bcSoft)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
-        return diagnostics.lastEvent
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(color.opacity(0.9))
+                        .padding(.top, 10)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct DeviceReadinessState {
+    let badge: String
+    let detail: String
+    let color: Color
+}
+
+private struct DataAuthorizationSettingsView: View {
+    let store: BodySummaryStore
+    let persistenceStore: BodyCoachPersistenceStore
+    let reminderStore: BodyCoachReminderStore
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                pageHeader
+
+                HealthConnectionCard(
+                    permissionState: store.permissionState,
+                    dataSource: store.dataSource,
+                    lastUpdated: store.lastUpdated,
+                    lastHealthReadError: store.lastHealthReadError,
+                    connectAppleHealth: {
+                        await store.connectAppleHealth()
+                    }
+                )
+
+                FirstRunGuideCard(
+                    permissionState: store.permissionState,
+                    subjectiveCheckIn: store.latestSubjectiveCheckIn,
+                    currentGoal: persistenceStore.currentGoal,
+                    recentDailySummaries: persistenceStore.recentDailySummaries,
+                    connectAppleHealth: {
+                        await store.connectAppleHealth()
+                    }
+                )
+
+                HealthDataCoverageCard(
+                    snapshot: store.dashboardSnapshot,
+                    permissionState: store.permissionState,
+                    dataSource: store.dataSource
+                )
+
+                SettingsSection(title: "接口状态") {
+                    DeviceReadinessRow(
+                        iconName: "heart.text.square.fill",
+                        title: "Apple 健康",
+                        badge: healthReadiness.badge,
+                        detail: healthReadiness.detail,
+                        color: healthReadiness.color
+                    )
+                    DeviceReadinessRow(
+                        iconName: "applewatch",
+                        title: "Watch App",
+                        badge: watchInstallReadiness.badge,
+                        detail: watchInstallReadiness.detail,
+                        color: watchInstallReadiness.color
+                    )
+                    DeviceReadinessRow(
+                        iconName: "antenna.radiowaves.left.and.right",
+                        title: "连接通道",
+                        badge: watchReachabilityReadiness.badge,
+                        detail: watchReachabilityReadiness.detail,
+                        color: watchReachabilityReadiness.color
+                    )
+                    DeviceReadinessRow(
+                        iconName: "arrow.left.arrow.right.circle.fill",
+                        title: "同步回传",
+                        badge: syncRoundTripReadiness.badge,
+                        detail: syncRoundTripReadiness.detail,
+                        color: syncRoundTripReadiness.color
+                    )
+                    DeviceReadinessRow(
+                        iconName: "bolt.horizontal.circle.fill",
+                        title: "即时测试",
+                        badge: watchConnectivityTestReadiness.badge,
+                        detail: watchConnectivityTestReadiness.detail,
+                        color: watchConnectivityTestReadiness.color
+                    )
+                    SettingsActionRow(
+                        iconName: "bolt.horizontal.circle.fill",
+                        title: "发送 Watch 连接测试",
+                        detail: "打开两端 App 后，用这一步确认即时通信链路。",
+                        color: .bcMint
+                    ) {
+                        store.runWatchConnectivityTest()
+                    }
+                }
+
+                SettingsSection(title: "通知授权") {
+                    SettingsInfoRow(
+                        iconName: "bell.badge.fill",
+                        title: "提醒状态",
+                        detail: notificationStatusText,
+                        color: notificationStatusColor
+                    )
+
+                    if let lastReminderOpenText {
+                        SettingsInfoRow(
+                            iconName: "arrowshape.turn.up.right.fill",
+                            title: "最近跳转",
+                            detail: lastReminderOpenText,
+                            color: .bcBlue
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 16)
+            .padding(.bottom, 96)
+        }
+        .background(BodyCoachBackground())
+        .navigationTitle("数据与授权")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            reminderStore.refreshAuthorizationStatus()
+        }
+    }
+
+    private var pageHeader: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("数据与授权")
+                .font(.system(size: 30, weight: .heavy, design: .rounded))
+                .foregroundStyle(Color.bcInk)
+            Text("集中管理 HealthKit、Apple Watch、通知权限和数据覆盖诊断。")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(Color.bcSoft)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var healthReadiness: DeviceReadinessState {
@@ -1352,29 +1353,148 @@ private struct SettingsPrivacyView: View {
 
         return "\(openedAt.formatted(date: .abbreviated, time: .shortened)) 点击 \(route.displayName) 提醒，已路由到 \(route == .sleep ? "今日页" : "记录页")。"
     }
+}
 
-    private var appStoreReadinessText: String {
-        "已具备 AppIcon、HealthKit 权限说明、Privacy Manifest、隐私政策、支持页、营销页和非医疗说明。提交前仍需真机截图、正式 Bundle ID / Team 与 App Store 隐私营养标签。"
+private struct MoreSupportSettingsView: View {
+    let persistenceStore: BodyCoachPersistenceStore
+    @Binding var showsDeleteConfirmation: Bool
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                pageHeader
+
+                SettingsSection(title: "隐私与健康数据") {
+                    SettingsInfoRow(
+                        iconName: "heart.text.square.fill",
+                        title: "Apple 健康数据用途",
+                        detail: "VitalLoop 只读取活动、睡眠、心率、HRV 和体重摘要，用于本地生成身体状态评分和今日建议。"
+                    )
+                    SettingsInfoRow(
+                        iconName: "lock.shield.fill",
+                        title: "本地优先",
+                        detail: "当前版本不上传原始 HealthKit 数据，也不把健康数据用于广告、营销或数据挖掘。"
+                    )
+                    SettingsInfoRow(
+                        iconName: "stethoscope",
+                        title: "非医疗诊断",
+                        detail: "评分和建议只用于生活方式参考，不能替代医生、营养师或其他专业医疗意见。"
+                    )
+                }
+
+                SettingsSection(title: "本地数据") {
+                    SettingsInfoRow(
+                        iconName: "externaldrive.fill",
+                        title: "保存内容",
+                        detail: "本机保存目标、每日摘要、体重记录，以及 Watch 快速记录的压力、疲劳和饥饿。"
+                    )
+                    SettingsActionRow(
+                        iconName: "trash",
+                        title: "删除本地记录",
+                        detail: "仅删除 VitalLoop 本机记录，不会删除 Apple 健康原始数据。",
+                        color: .bcAmber,
+                        role: .destructive
+                    ) {
+                        showsDeleteConfirmation = true
+                    }
+
+                    if let error = persistenceStore.lastPersistenceError {
+                        SettingsInfoRow(
+                            iconName: "exclamationmark.triangle.fill",
+                            title: "本地存储状态",
+                            detail: error,
+                            color: .bcAmber
+                        )
+                    }
+                }
+
+                SettingsSection(title: "Beta 反馈") {
+                    SettingsInfoRow(
+                        iconName: "bubble.left.and.exclamationmark.bubble.right.fill",
+                        title: "反馈范围",
+                        detail: "优先反馈 HealthKit 授权、Watch 同步、提醒跳转、记录编辑和 TestFlight 安装问题。提交前不要附带完整健康原始数据。",
+                        color: .bcBlue
+                    )
+
+                    if let url = AppPrivacyLinks.betaFeedbackURL {
+                        SettingsLinkRow(
+                            iconName: "square.and.pencil",
+                            title: "提交 Beta 反馈",
+                            detail: "打开当前版本的反馈入口。",
+                            destination: url,
+                            color: .bcMint
+                        )
+                    }
+
+                    if let url = AppPrivacyLinks.supportIssuesURL {
+                        SettingsLinkRow(
+                            iconName: "tray.full.fill",
+                            title: "查看反馈列表",
+                            detail: "查看已提交的问题和处理进度。",
+                            destination: url,
+                            color: .bcBlue
+                        )
+                    }
+                }
+
+                SettingsSection(title: "隐私政策") {
+                    SettingsInfoRow(
+                        iconName: "doc.text.fill",
+                        title: "App 内政策摘要",
+                        detail: "隐私政策、支持页和营销页已接入 GitHub Pages。提交前需要确认三条 URL 都可公网访问，并与 App Store Connect 填写一致。"
+                    )
+                    SettingsInfoRow(
+                        iconName: "checklist.checked",
+                        title: "上架材料状态",
+                        detail: appStoreReadinessText,
+                        color: .bcBlue
+                    )
+
+                    if let url = AppPrivacyLinks.privacyPolicyURL {
+                        SettingsLinkRow(
+                            iconName: "safari",
+                            title: "打开隐私政策网页",
+                            detail: "查看 TestFlight 和 App Store Connect 使用的公开政策。",
+                            destination: url,
+                            color: .bcMint
+                        )
+                    }
+
+                    if let url = AppPrivacyLinks.supportURL {
+                        SettingsLinkRow(
+                            iconName: "questionmark.circle.fill",
+                            title: "打开支持页面",
+                            detail: "查看支持说明、联系方式和已知限制。",
+                            destination: url,
+                            color: .bcBlue
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 16)
+            .padding(.bottom, 96)
+        }
+        .background(BodyCoachBackground())
+        .navigationTitle("更多与支持")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var header: some View {
+    private var pageHeader: some View {
         VStack(alignment: .leading, spacing: 5) {
-            VitalLoopWordmark()
-            Text("设置与隐私")
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
+            Text("更多与支持")
+                .font(.system(size: 30, weight: .heavy, design: .rounded))
                 .foregroundStyle(Color.bcInk)
-            Text("管理健康数据使用、本地记录和上架前需要明确展示的隐私说明。")
+            Text("低频说明、支持入口和本地数据管理集中放在这里。")
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(Color.bcSoft)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
-}
 
-private struct DeviceReadinessState {
-    let badge: String
-    let detail: String
-    let color: Color
+    private var appStoreReadinessText: String {
+        "已具备 AppIcon、HealthKit 权限说明、Privacy Manifest、隐私政策、支持页、营销页和非医疗说明。提交前仍需真机截图、正式 Bundle ID / Team 与 App Store 隐私营养标签。"
+    }
 }
 
 private struct SettingsSection<Content: View>: View {
@@ -1395,73 +1515,6 @@ private struct SettingsSection<Content: View>: View {
                 content
             }
         }
-    }
-}
-
-private struct SettingsDisclosureSection<Content: View>: View {
-    let title: String
-    let detail: String
-    @Binding var isExpanded: Bool
-    let content: Content
-
-    init(title: String, detail: String, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.detail = detail
-        self._isExpanded = isExpanded
-        self.content = content()
-    }
-
-    var body: some View {
-        GlassCard(cornerRadius: 24, padding: 16) {
-            VStack(alignment: .leading, spacing: 14) {
-                Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
-                        isExpanded.toggle()
-                    }
-                } label: {
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(title)
-                                .font(.headline.weight(.bold))
-                                .foregroundStyle(Color.bcInk)
-                            Text(detail)
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(Color.bcSoft)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(Color.bcMint)
-                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                            .frame(width: 32, height: 32)
-                            .background(Color.bcMint.opacity(0.13), in: Circle())
-                    }
-                }
-                .buttonStyle(.plain)
-
-                if isExpanded {
-                    VStack(alignment: .leading, spacing: 12) {
-                        content
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-        }
-    }
-}
-
-private struct SettingsSubsectionHeader: View {
-    let title: String
-
-    var body: some View {
-        Text(title)
-            .font(.caption.weight(.bold))
-            .foregroundStyle(Color.bcSoft)
-            .textCase(.none)
-            .padding(.top, 2)
     }
 }
 
