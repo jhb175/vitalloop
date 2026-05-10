@@ -863,6 +863,7 @@ private struct SettingsPrivacyView: View {
     let reminderStore: BodyCoachReminderStore
 
     @State private var showsDeleteConfirmation = false
+    @State private var showsMoreSettings = false
 
     var body: some View {
         NavigationStack {
@@ -896,53 +897,7 @@ private struct SettingsPrivacyView: View {
                         dataSource: store.dataSource
                     )
 
-                    SettingsSection(title: "隐私与健康数据") {
-                        SettingsInfoRow(
-                            iconName: "heart.text.square.fill",
-                            title: "Apple 健康数据用途",
-                            detail: "VitalLoop 只读取活动、睡眠、心率、HRV 和体重摘要，用于本地生成身体状态评分和今日建议。"
-                        )
-                        SettingsInfoRow(
-                            iconName: "lock.shield.fill",
-                            title: "本地优先",
-                            detail: "当前版本不上传原始 HealthKit 数据，也不把健康数据用于广告、营销或数据挖掘。"
-                        )
-                        SettingsInfoRow(
-                            iconName: "stethoscope",
-                            title: "非医疗诊断",
-                            detail: "评分和建议只用于生活方式参考，不能替代医生、营养师或其他专业医疗意见。"
-                        )
-                    }
-
-                    SettingsSection(title: "本地数据") {
-                        SettingsInfoRow(
-                            iconName: "externaldrive.fill",
-                            title: "保存内容",
-                            detail: "本机保存目标、每日摘要、体重记录，以及 Watch 快速记录的压力、疲劳和饥饿。"
-                        )
-
-                        Button(role: .destructive) {
-                            showsDeleteConfirmation = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "trash")
-                                Text("删除本地记录")
-                                Spacer()
-                            }
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(Color.bcAmber)
-                            .padding(.vertical, 4)
-                        }
-                        .buttonStyle(.plain)
-
-                        if let error = persistenceStore.lastPersistenceError {
-                            Text("本地存储状态：\(error)")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(Color.bcAmber)
-                        }
-                    }
-
-                    SettingsSection(title: "真机联调检查") {
+                    SettingsSection(title: "关键接口状态") {
                         DeviceReadinessRow(
                             iconName: "heart.text.square.fill",
                             title: "Apple 健康",
@@ -978,19 +933,14 @@ private struct SettingsPrivacyView: View {
                             detail: watchConnectivityTestReadiness.detail,
                             color: watchConnectivityTestReadiness.color
                         )
-                        Button {
+                        SettingsActionRow(
+                            iconName: "bolt.horizontal.circle.fill",
+                            title: "发送 Watch 连接测试",
+                            detail: "打开两端 App 后，用这一步确认即时通信链路。",
+                            color: .bcMint
+                        ) {
                             store.runWatchConnectivityTest()
-                        } label: {
-                            HStack {
-                                Image(systemName: "bolt.horizontal.circle.fill")
-                                Text("发送 Watch 连接测试")
-                                Spacer()
-                            }
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(Color.bcMint)
-                            .padding(.vertical, 4)
                         }
-                        .buttonStyle(.plain)
                     }
 
                     SettingsSection(title: "通知提醒") {
@@ -1042,57 +992,82 @@ private struct SettingsPrivacyView: View {
                         }
                     }
 
-                    SettingsSection(title: "Apple Watch 同步") {
+                    SettingsDisclosureSection(
+                        title: "更多与支持",
+                        detail: "隐私说明、本地数据、Beta 反馈和上架材料放在这里，日常使用时不占主视图空间。",
+                        isExpanded: $showsMoreSettings
+                    ) {
+                        SettingsSubsectionHeader(title: "隐私与健康数据")
                         SettingsInfoRow(
-                            iconName: "applewatch",
-                            title: "连接状态",
-                            detail: watchSyncConnectionDetail
+                            iconName: "heart.text.square.fill",
+                            title: "Apple 健康数据用途",
+                            detail: "VitalLoop 只读取活动、睡眠、心率、HRV 和体重摘要，用于本地生成身体状态评分和今日建议。"
                         )
                         SettingsInfoRow(
-                            iconName: "arrow.left.arrow.right.circle.fill",
-                            title: "最近事件",
-                            detail: watchSyncEventDetail
+                            iconName: "lock.shield.fill",
+                            title: "本地优先",
+                            detail: "当前版本不上传原始 HealthKit 数据，也不把健康数据用于广告、营销或数据挖掘。"
                         )
-                    }
+                        SettingsInfoRow(
+                            iconName: "stethoscope",
+                            title: "非医疗诊断",
+                            detail: "评分和建议只用于生活方式参考，不能替代医生、营养师或其他专业医疗意见。"
+                        )
 
-                    SettingsSection(title: "Beta 反馈") {
+                        SettingsSubsectionHeader(title: "本地数据")
+                        SettingsInfoRow(
+                            iconName: "externaldrive.fill",
+                            title: "保存内容",
+                            detail: "本机保存目标、每日摘要、体重记录，以及 Watch 快速记录的压力、疲劳和饥饿。"
+                        )
+                        SettingsActionRow(
+                            iconName: "trash",
+                            title: "删除本地记录",
+                            detail: "仅删除 VitalLoop 本机记录，不会删除 Apple 健康原始数据。",
+                            color: .bcAmber,
+                            role: .destructive
+                        ) {
+                            showsDeleteConfirmation = true
+                        }
+
+                        if let error = persistenceStore.lastPersistenceError {
+                            SettingsInfoRow(
+                                iconName: "exclamationmark.triangle.fill",
+                                title: "本地存储状态",
+                                detail: error,
+                                color: .bcAmber
+                            )
+                        }
+
+                        SettingsSubsectionHeader(title: "Beta 反馈")
                         SettingsInfoRow(
                             iconName: "bubble.left.and.exclamationmark.bubble.right.fill",
                             title: "反馈范围",
-                            detail: "请优先反馈 HealthKit 授权、Watch 同步、提醒跳转、记录编辑和 TestFlight 安装问题。提交前不要附带完整健康原始数据。",
+                            detail: "优先反馈 HealthKit 授权、Watch 同步、提醒跳转、记录编辑和 TestFlight 安装问题。提交前不要附带完整健康原始数据。",
                             color: .bcBlue
                         )
 
                         if let url = AppPrivacyLinks.betaFeedbackURL {
-                            Link(destination: url) {
-                                HStack {
-                                    Image(systemName: "square.and.pencil")
-                                    Text("提交 Beta 反馈")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                }
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(Color.bcMint)
-                                .padding(.vertical, 4)
-                            }
+                            SettingsLinkRow(
+                                iconName: "square.and.pencil",
+                                title: "提交 Beta 反馈",
+                                detail: "打开当前版本的反馈入口。",
+                                destination: url,
+                                color: .bcMint
+                            )
                         }
 
                         if let url = AppPrivacyLinks.supportIssuesURL {
-                            Link(destination: url) {
-                                HStack {
-                                    Image(systemName: "tray.full.fill")
-                                    Text("查看反馈列表")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                }
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(Color.bcBlue)
-                                .padding(.vertical, 4)
-                            }
+                            SettingsLinkRow(
+                                iconName: "tray.full.fill",
+                                title: "查看反馈列表",
+                                detail: "查看已提交的问题和处理进度。",
+                                destination: url,
+                                color: .bcBlue
+                            )
                         }
-                    }
 
-                    SettingsSection(title: "隐私政策") {
+                        SettingsSubsectionHeader(title: "隐私政策")
                         SettingsInfoRow(
                             iconName: "doc.text.fill",
                             title: "App 内政策摘要",
@@ -1106,31 +1081,23 @@ private struct SettingsPrivacyView: View {
                         )
 
                         if let url = AppPrivacyLinks.privacyPolicyURL {
-                            Link(destination: url) {
-                                HStack {
-                                    Image(systemName: "safari")
-                                    Text("打开隐私政策网页")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                }
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(Color.bcMint)
-                                .padding(.vertical, 4)
-                            }
+                            SettingsLinkRow(
+                                iconName: "safari",
+                                title: "打开隐私政策网页",
+                                detail: "查看 TestFlight 和 App Store Connect 使用的公开政策。",
+                                destination: url,
+                                color: .bcMint
+                            )
                         }
 
                         if let url = AppPrivacyLinks.supportURL {
-                            Link(destination: url) {
-                                HStack {
-                                    Image(systemName: "questionmark.circle.fill")
-                                    Text("打开支持页面")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                }
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(Color.bcBlue)
-                                .padding(.vertical, 4)
-                            }
+                            SettingsLinkRow(
+                                iconName: "questionmark.circle.fill",
+                                title: "打开支持页面",
+                                detail: "查看支持说明、联系方式和已知限制。",
+                                destination: url,
+                                color: .bcBlue
+                            )
                         }
                     }
                 }
@@ -1431,6 +1398,73 @@ private struct SettingsSection<Content: View>: View {
     }
 }
 
+private struct SettingsDisclosureSection<Content: View>: View {
+    let title: String
+    let detail: String
+    @Binding var isExpanded: Bool
+    let content: Content
+
+    init(title: String, detail: String, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.detail = detail
+        self._isExpanded = isExpanded
+        self.content = content()
+    }
+
+    var body: some View {
+        GlassCard(cornerRadius: 24, padding: 16) {
+            VStack(alignment: .leading, spacing: 14) {
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
+                        isExpanded.toggle()
+                    }
+                } label: {
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(title)
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(Color.bcInk)
+                            Text(detail)
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(Color.bcSoft)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.bcMint)
+                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                            .frame(width: 32, height: 32)
+                            .background(Color.bcMint.opacity(0.13), in: Circle())
+                    }
+                }
+                .buttonStyle(.plain)
+
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 12) {
+                        content
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+        }
+    }
+}
+
+private struct SettingsSubsectionHeader: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.caption.weight(.bold))
+            .foregroundStyle(Color.bcSoft)
+            .textCase(.none)
+            .padding(.top, 2)
+    }
+}
+
 private struct DeviceReadinessRow: View {
     let iconName: String
     let title: String
@@ -1470,6 +1504,88 @@ private struct DeviceReadinessRow: View {
         }
         .padding(10)
         .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+private struct SettingsActionRow: View {
+    let iconName: String
+    let title: String
+    let detail: String
+    let color: Color
+    var role: ButtonRole? = nil
+    let action: () -> Void
+
+    var body: some View {
+        Button(role: role) {
+            action()
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: iconName)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(color)
+                    .frame(width: 32, height: 32)
+                    .background(color.opacity(0.13), in: Circle())
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(color)
+                    Text(detail)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.bcSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(color.opacity(0.88))
+                    .padding(.top, 8)
+            }
+            .padding(10)
+            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct SettingsLinkRow: View {
+    let iconName: String
+    let title: String
+    let detail: String
+    let destination: URL
+    let color: Color
+
+    var body: some View {
+        Link(destination: destination) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: iconName)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(color)
+                    .frame(width: 32, height: 32)
+                    .background(color.opacity(0.13), in: Circle())
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(color)
+                    Text(detail)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.bcSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                Image(systemName: "arrow.up.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(color.opacity(0.88))
+                    .padding(.top, 8)
+            }
+            .padding(10)
+            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
     }
 }
 
@@ -1553,6 +1669,8 @@ private struct SettingsInfoRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
