@@ -13,6 +13,9 @@ final class WatchSyncService: NSObject {
     private(set) var lastCheckInSentAt: Date?
     private(set) var lastCheckInReceivedAt: Date?
     private(set) var lastCheckInAcknowledgedAt: Date?
+    private(set) var lastConnectivityTestSentAt: Date?
+    private(set) var lastConnectivityTestAcknowledgedAt: Date?
+    private(set) var lastConnectivityTestRoundTripMs: Int?
     private(set) var activationState: WCSessionActivationState = .notActivated
     private(set) var isReachable: Bool = false
     private(set) var lastSyncEvent: String = "尚未启动"
@@ -136,6 +139,66 @@ final class WatchSyncService: NSObject {
         }
     }
 
+    #if os(iOS)
+    func runConnectivityTest() {
+        let sentAt = Date()
+        lastConnectivityTestSentAt = sentAt
+        lastConnectivityTestAcknowledgedAt = nil
+        lastConnectivityTestRoundTripMs = nil
+
+        guard WCSession.isSupported() else {
+            record("无法测试 Watch 连接：系统不支持 WatchConnectivity")
+            return
+        }
+
+        let session = WCSession.default
+        guard session.activationState == .activated else {
+            refreshState(from: session)
+            record("无法测试 Watch 连接：同步尚未激活")
+            return
+        }
+
+        guard session.isWatchAppInstalled else {
+            refreshState(from: session)
+            record("无法测试 Watch 连接：Watch app 未安装")
+            return
+        }
+
+        guard session.isReachable else {
+            refreshState(from: session)
+            record("无法测试 Watch 连接：当前不可达")
+            return
+        }
+
+        session.sendMessage(Self.makeConnectivityTestMessage(sentAt: sentAt)) { [weak self] reply in
+            let acknowledged = Self.isConnectivityTestAcknowledged(reply)
+            let acknowledgedAt = Date()
+            let roundTripMs = Int(acknowledgedAt.timeIntervalSince(sentAt) * 1_000)
+
+            Task { @MainActor in
+                guard acknowledged else {
+                    self?.record("Watch 连接测试未确认")
+                    return
+                }
+
+                self?.lastSyncError = nil
+                self?.lastConnectivityTestAcknowledgedAt = acknowledgedAt
+                self?.lastConnectivityTestRoundTripMs = max(0, roundTripMs)
+                self?.record("Watch 连接测试通过")
+            }
+        } errorHandler: { [weak self] error in
+            let message = error.localizedDescription
+            Task { @MainActor in
+                self?.lastSyncError = message
+                self?.record("Watch 连接测试失败：\(message)")
+            }
+        }
+
+        refreshState(from: session)
+        record("已发送 Watch 连接测试")
+    }
+    #endif
+
     private func receiveSummary(data: Data?, receivedAt: Date) {
         guard let data, let payload = decodePayload(from: data) else {
             return
@@ -203,6 +266,10 @@ final class WatchSyncService: NSObject {
         context[checkInKey] as? Data
     }
 
+    private nonisolated static func hasConnectivityTest(_ context: [String: Any]) -> Bool {
+        context[connectivityTestKey] as? Bool == true
+    }
+
     private nonisolated static func decodedCheckIn(from data: Data?) -> WatchSubjectiveCheckInPayload? {
         guard let data else {
             return nil
@@ -215,6 +282,10 @@ final class WatchSyncService: NSObject {
 
     private nonisolated static func isAcknowledged(_ reply: [String: Any]) -> Bool {
         reply[acknowledgedKey] as? Bool == true
+    }
+
+    private nonisolated static func isConnectivityTestAcknowledged(_ reply: [String: Any]) -> Bool {
+        reply[connectivityTestAckKey] as? Bool == true
     }
 
     private func makeContext(from payload: WatchSummaryPayload) -> [String: Any] {
@@ -231,6 +302,13 @@ final class WatchSyncService: NSObject {
         }
 
         return [Self.checkInKey: data]
+    }
+
+    private nonisolated static func makeConnectivityTestMessage(sentAt: Date) -> [String: Any] {
+        [
+            connectivityTestKey: true,
+            connectivityTestSentAtKey: sentAt.timeIntervalSince1970
+        ]
     }
 
     private func refreshState(from session: WCSession) {
@@ -280,6 +358,9 @@ final class WatchSyncService: NSObject {
     private nonisolated static let payloadKey = "watchSummaryPayload"
     private nonisolated static let checkInKey = "watchSubjectiveCheckIn"
     private nonisolated static let acknowledgedKey = "acknowledged"
+    private nonisolated static let connectivityTestKey = "watchConnectivityTest"
+    private nonisolated static let connectivityTestSentAtKey = "watchConnectivityTestSentAt"
+    private nonisolated static let connectivityTestAckKey = "watchConnectivityTestAcknowledged"
 }
 
 private struct WatchSessionSnapshot: Sendable {
@@ -351,6 +432,7 @@ extension WatchSyncService: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         let payloadData = Self.payloadData(from: message)
         let checkInData = Self.checkInData(from: message)
+        let hasConnectivityTest = Self.hasConnectivityTest(message)
         let receivedAt = Date()
         let snapshot = Self.snapshot(from: session)
 
@@ -358,6 +440,9 @@ extension WatchSyncService: WCSessionDelegate {
             self.refreshState(from: snapshot)
             self.receiveSummary(data: payloadData, receivedAt: receivedAt)
             self.receiveCheckIn(data: checkInData, receivedAt: receivedAt)
+            if hasConnectivityTest {
+                self.record("已收到 Watch 连接测试")
+            }
         }
     }
 
@@ -369,16 +454,23 @@ extension WatchSyncService: WCSessionDelegate {
         let payloadData = Self.payloadData(from: message)
         let checkInData = Self.checkInData(from: message)
         let checkIn = Self.decodedCheckIn(from: checkInData)
+        let hasConnectivityTest = Self.hasConnectivityTest(message)
         let receivedAt = Date()
         let snapshot = Self.snapshot(from: session)
 
-        replyHandler([Self.acknowledgedKey: checkIn != nil])
+        replyHandler([
+            Self.acknowledgedKey: checkIn != nil,
+            Self.connectivityTestAckKey: hasConnectivityTest
+        ])
 
         Task { @MainActor in
             self.refreshState(from: snapshot)
             self.receiveSummary(data: payloadData, receivedAt: receivedAt)
             if let checkIn {
                 self.receiveCheckIn(checkIn, receivedAt: receivedAt)
+            }
+            if hasConnectivityTest {
+                self.record("已确认 Watch 连接测试")
             }
         }
     }

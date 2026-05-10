@@ -31,7 +31,10 @@ final class BodySummaryStore {
             lastReceivedAt: watchSyncService.lastReceivedAt,
             lastCheckInSentAt: watchSyncService.lastCheckInSentAt,
             lastCheckInReceivedAt: watchSyncService.lastCheckInReceivedAt,
-            lastCheckInAcknowledgedAt: watchSyncService.lastCheckInAcknowledgedAt
+            lastCheckInAcknowledgedAt: watchSyncService.lastCheckInAcknowledgedAt,
+            lastConnectivityTestSentAt: watchSyncService.lastConnectivityTestSentAt,
+            lastConnectivityTestAcknowledgedAt: watchSyncService.lastConnectivityTestAcknowledgedAt,
+            lastConnectivityTestRoundTripMs: watchSyncService.lastConnectivityTestRoundTripMs
         )
     }
 
@@ -72,6 +75,10 @@ final class BodySummaryStore {
         }
 
         sendWatchSummary()
+    }
+
+    func runWatchConnectivityTest() {
+        watchSyncService.runConnectivityTest()
     }
 
     func connectAppleHealth() async {
@@ -239,6 +246,9 @@ struct WatchSyncDiagnostics: Equatable {
     var lastCheckInSentAt: Date?
     var lastCheckInReceivedAt: Date?
     var lastCheckInAcknowledgedAt: Date?
+    var lastConnectivityTestSentAt: Date?
+    var lastConnectivityTestAcknowledgedAt: Date?
+    var lastConnectivityTestRoundTripMs: Int?
 }
 
 private extension WCSessionActivationState {

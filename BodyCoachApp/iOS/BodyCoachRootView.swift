@@ -673,6 +673,26 @@ private struct SettingsPrivacyView: View {
                             detail: syncRoundTripReadiness.detail,
                             color: syncRoundTripReadiness.color
                         )
+                        DeviceReadinessRow(
+                            iconName: "bolt.horizontal.circle.fill",
+                            title: "即时测试",
+                            badge: watchConnectivityTestReadiness.badge,
+                            detail: watchConnectivityTestReadiness.detail,
+                            color: watchConnectivityTestReadiness.color
+                        )
+                        Button {
+                            store.runWatchConnectivityTest()
+                        } label: {
+                            HStack {
+                                Image(systemName: "bolt.horizontal.circle.fill")
+                                Text("发送 Watch 连接测试")
+                                Spacer()
+                            }
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(Color.bcMint)
+                            .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     SettingsSection(title: "通知提醒") {
@@ -914,6 +934,32 @@ private struct SettingsPrivacyView: View {
         return DeviceReadinessState(
             badge: "待验证",
             detail: "先打开两端 App，再在 Watch 快速记录压力、疲劳和饥饿，确认 iPhone 记录页出现新记录。",
+            color: .bcMuted
+        )
+    }
+
+    private var watchConnectivityTestReadiness: DeviceReadinessState {
+        let diagnostics = store.watchSyncDiagnostics
+        if let acknowledgedAt = diagnostics.lastConnectivityTestAcknowledgedAt {
+            let latency = diagnostics.lastConnectivityTestRoundTripMs.map { "，往返 \($0)ms" } ?? ""
+            return DeviceReadinessState(
+                badge: "通过",
+                detail: "Watch 已在 \(acknowledgedAt.formatted(date: .abbreviated, time: .shortened)) 确认即时连接测试\(latency)。",
+                color: .bcMint
+            )
+        }
+
+        if let sentAt = diagnostics.lastConnectivityTestSentAt {
+            return DeviceReadinessState(
+                badge: "已发送",
+                detail: "已在 \(sentAt.formatted(date: .abbreviated, time: .shortened)) 发送测试，等待 Watch 回复。保持两端 App 在前台。",
+                color: .bcBlue
+            )
+        }
+
+        return DeviceReadinessState(
+            badge: "未测试",
+            detail: "打开 iPhone 与 Watch 端 App 后，点击下方按钮验证即时双向通信。",
             color: .bcMuted
         )
     }

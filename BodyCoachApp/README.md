@@ -120,7 +120,8 @@ iPhone 设置页已加入“真机联调检查”，用于集中确认 HealthKit
 3. 在 iPhone 今日页点击“连接 Apple 健康”，允许读取活动、睡眠、心率、HRV 和体重。
 4. 到 iPhone 设置页查看“真机联调检查”，Apple 健康应显示“通过”或“部分”，Watch App 应显示“已安装”。
 5. 保持两端 App 在前台，连接通道应从“后台 / 未激活”变为“可达”。
-6. 在 Watch 上保存一条压力、疲劳、饥饿记录，iPhone 设置页“同步回传”应显示“已回传”，记录页也应出现新主观记录。
+6. 点击 iPhone 设置页“发送 Watch 连接测试”，即时测试应显示“通过”，并显示最近确认时间和往返耗时。
+7. 在 Watch 上保存一条压力、疲劳、饥饿记录，iPhone 设置页“同步回传”应显示“已回传”，记录页也应出现新主观记录。
 
 如果“同步回传”没有变为“已回传”，优先检查：
 
@@ -128,6 +129,7 @@ iPhone 设置页已加入“真机联调检查”，用于集中确认 HealthKit
 - 两端 bundle id 是否分别为 `com.ramsey.bodycoach` 和 `com.ramsey.bodycoach.watchkitapp`。
 - Watch app 是否已安装到手表，而不是只安装了 iPhone app。
 - 两端 App 是否至少各启动过一次，且 WatchConnectivity 已激活。
+- 如果“即时测试”已发送但没有通过，保持两端 App 在前台再点一次；如果仍失败，优先看设置页“Apple Watch 同步”的最近事件错误。
 
 ## App Store 准备清单
 
