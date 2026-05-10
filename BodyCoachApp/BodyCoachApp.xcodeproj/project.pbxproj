@@ -421,12 +421,13 @@
 		};
 		100000000000000000000821 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
-				CODE_SIGN_ENTITLEMENTS = BodyCoachApp.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_PREVIEWS = YES;
+				buildSettings = {
+					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+					CODE_SIGN_STYLE = Automatic;
+					CODE_SIGN_ENTITLEMENTS = BodyCoachApp.entitlements;
+					CURRENT_PROJECT_VERSION = 1;
+					DEVELOPMENT_TEAM = B9RPMQ9JW7;
+					ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitalLoop;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "VitalLoop 需要读取活动、睡眠、心率、HRV 和体重数据，用于生成本地身体状态总结和今日建议。";
@@ -453,12 +454,13 @@
 		};
 		100000000000000000000822 /* Release */ = {
 			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
-				CODE_SIGN_ENTITLEMENTS = BodyCoachApp.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_PREVIEWS = YES;
+				buildSettings = {
+					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+					CODE_SIGN_STYLE = Automatic;
+					CODE_SIGN_ENTITLEMENTS = BodyCoachApp.entitlements;
+					CURRENT_PROJECT_VERSION = 1;
+					DEVELOPMENT_TEAM = B9RPMQ9JW7;
+					ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitalLoop;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "VitalLoop 需要读取活动、睡眠、心率、HRV 和体重数据，用于生成本地身体状态总结和今日建议。";
@@ -485,11 +487,12 @@
 		};
 		100000000000000000000831 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_PREVIEWS = YES;
+				buildSettings = {
+					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+					CODE_SIGN_STYLE = Automatic;
+					CURRENT_PROJECT_VERSION = 1;
+					DEVELOPMENT_TEAM = B9RPMQ9JW7;
+					ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitalLoop;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -515,11 +518,12 @@
 		};
 		100000000000000000000832 /* Release */ = {
 			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_PREVIEWS = YES;
+				buildSettings = {
+					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+					CODE_SIGN_STYLE = Automatic;
+					CURRENT_PROJECT_VERSION = 1;
+					DEVELOPMENT_TEAM = B9RPMQ9JW7;
+					ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitalLoop;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
