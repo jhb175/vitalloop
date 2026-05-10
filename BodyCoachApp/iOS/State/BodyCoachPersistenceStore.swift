@@ -11,6 +11,9 @@ final class BodyCoachPersistenceStore {
     private(set) var latestSubjectiveCheckIn: WatchSubjectiveCheckInPayload?
     private(set) var currentGoal: UserGoal?
     private(set) var recentDailySummaries: [DailySummaryRecord] = []
+    private(set) var recentSubjectiveCheckIns: [SubjectiveCheckIn] = []
+    private(set) var recentWeightEntries: [WeightEntry] = []
+    private(set) var recentMealLogs: [MealLogEntry] = []
     private(set) var lastPersistenceError: String?
 
     func configure(modelContext: ModelContext) {
@@ -18,6 +21,7 @@ final class BodyCoachPersistenceStore {
         loadCurrentGoal()
         loadLatestSubjectiveCheckIn()
         loadRecentDailySummaries()
+        loadRecentLogs()
     }
 
     func saveFatLossGoal(
@@ -88,6 +92,41 @@ final class BodyCoachPersistenceStore {
             }
 
             try modelContext.save()
+            lastPersistenceError = nil
+            loadRecentLogs()
+        } catch {
+            lastPersistenceError = error.localizedDescription
+        }
+    }
+
+    func saveWeightEntry(weightKg: Double, note: String = "", source: String = "iPhone") {
+        guard let modelContext else {
+            lastPersistenceError = "本地存储尚未就绪"
+            return
+        }
+
+        do {
+            let entry = WeightEntry(weightKg: weightKg, source: source, note: note)
+            modelContext.insert(entry)
+            try modelContext.save()
+            recentWeightEntries = try recentWeightEntryRecords(limit: 14)
+            lastPersistenceError = nil
+        } catch {
+            lastPersistenceError = error.localizedDescription
+        }
+    }
+
+    func saveMealLog(kind: MealLogKind, note: String = "", source: String = "iPhone") {
+        guard let modelContext else {
+            lastPersistenceError = "本地存储尚未就绪"
+            return
+        }
+
+        do {
+            let entry = MealLogEntry(kind: kind, note: note, source: source)
+            modelContext.insert(entry)
+            try modelContext.save()
+            recentMealLogs = try recentMealLogRecords(limit: 14)
             lastPersistenceError = nil
         } catch {
             lastPersistenceError = error.localizedDescription
@@ -170,6 +209,18 @@ final class BodyCoachPersistenceStore {
         }
     }
 
+    func loadRecentLogs(limit: Int = 14) {
+        do {
+            recentSubjectiveCheckIns = try recentSubjectiveCheckInRecords(limit: limit)
+            recentWeightEntries = try recentWeightEntryRecords(limit: limit)
+            recentMealLogs = try recentMealLogRecords(limit: limit)
+            latestSubjectiveCheckIn = recentSubjectiveCheckIns.first.map(WatchSubjectiveCheckInPayload.init(record:))
+            lastPersistenceError = nil
+        } catch {
+            lastPersistenceError = error.localizedDescription
+        }
+    }
+
     func deleteLocalData() {
         guard let modelContext else {
             lastPersistenceError = "本地存储尚未就绪"
@@ -181,10 +232,14 @@ final class BodyCoachPersistenceStore {
             try deleteAll(DailySummaryRecord.self, in: modelContext)
             try deleteAll(SubjectiveCheckIn.self, in: modelContext)
             try deleteAll(WeightEntry.self, in: modelContext)
+            try deleteAll(MealLogEntry.self, in: modelContext)
             try modelContext.save()
             latestSubjectiveCheckIn = nil
             currentGoal = nil
             recentDailySummaries = []
+            recentSubjectiveCheckIns = []
+            recentWeightEntries = []
+            recentMealLogs = []
             lastPersistenceError = nil
         } catch {
             lastPersistenceError = error.localizedDescription
@@ -244,6 +299,42 @@ final class BodyCoachPersistenceStore {
 
         var descriptor = FetchDescriptor<DailySummaryRecord>(
             sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        descriptor.fetchLimit = limit
+        return try modelContext.fetch(descriptor)
+    }
+
+    private func recentSubjectiveCheckInRecords(limit: Int) throws -> [SubjectiveCheckIn] {
+        guard let modelContext else {
+            return []
+        }
+
+        var descriptor = FetchDescriptor<SubjectiveCheckIn>(
+            sortBy: [SortDescriptor(\.capturedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = limit
+        return try modelContext.fetch(descriptor)
+    }
+
+    private func recentWeightEntryRecords(limit: Int) throws -> [WeightEntry] {
+        guard let modelContext else {
+            return []
+        }
+
+        var descriptor = FetchDescriptor<WeightEntry>(
+            sortBy: [SortDescriptor(\.capturedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = limit
+        return try modelContext.fetch(descriptor)
+    }
+
+    private func recentMealLogRecords(limit: Int) throws -> [MealLogEntry] {
+        guard let modelContext else {
+            return []
+        }
+
+        var descriptor = FetchDescriptor<MealLogEntry>(
+            sortBy: [SortDescriptor(\.capturedAt, order: .reverse)]
         )
         descriptor.fetchLimit = limit
         return try modelContext.fetch(descriptor)

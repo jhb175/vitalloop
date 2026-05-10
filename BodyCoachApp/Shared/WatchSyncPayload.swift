@@ -110,6 +110,7 @@ struct WatchSummaryPayload: Codable, Equatable, Sendable {
     var status: BodyStatus
     var headline: String
     var detail: String
+    var latestCheckIn: WatchSubjectiveCheckInPayload?
     var metrics: [WatchMetricPayload]
     var recommendations: [WatchRecommendationPayload]
 
@@ -119,6 +120,7 @@ struct WatchSummaryPayload: Codable, Equatable, Sendable {
         status: BodyStatus,
         headline: String,
         detail: String,
+        latestCheckIn: WatchSubjectiveCheckInPayload? = nil,
         metrics: [WatchMetricPayload],
         recommendations: [WatchRecommendationPayload]
     ) {
@@ -127,6 +129,7 @@ struct WatchSummaryPayload: Codable, Equatable, Sendable {
         self.status = status
         self.headline = headline
         self.detail = detail
+        self.latestCheckIn = latestCheckIn
         self.metrics = metrics
         self.recommendations = recommendations
     }
@@ -141,6 +144,7 @@ struct WatchSummaryPayload: Codable, Equatable, Sendable {
 
         self.headline = try container.decode(String.self, forKey: .headline)
         self.detail = try container.decode(String.self, forKey: .detail)
+        self.latestCheckIn = try container.decodeIfPresent(WatchSubjectiveCheckInPayload.self, forKey: .latestCheckIn)
         self.metrics = try container.decode([WatchMetricPayload].self, forKey: .metrics)
         self.recommendations = try container.decode([WatchRecommendationPayload].self, forKey: .recommendations)
     }
@@ -152,6 +156,7 @@ struct WatchSummaryPayload: Codable, Equatable, Sendable {
         try container.encode(status.rawValue, forKey: .status)
         try container.encode(headline, forKey: .headline)
         try container.encode(detail, forKey: .detail)
+        try container.encodeIfPresent(latestCheckIn, forKey: .latestCheckIn)
         try container.encode(metrics, forKey: .metrics)
         try container.encode(recommendations, forKey: .recommendations)
     }
@@ -162,19 +167,27 @@ struct WatchSummaryPayload: Codable, Equatable, Sendable {
         case status
         case headline
         case detail
+        case latestCheckIn
         case metrics
         case recommendations
     }
 }
 
 extension WatchSummaryPayload {
-    init(summary: DailyBodySummary, snapshot: BodyDashboardSnapshot, trends: BodyDashboardTrends, updatedAt: Date) {
+    init(
+        summary: DailyBodySummary,
+        snapshot: BodyDashboardSnapshot,
+        trends: BodyDashboardTrends,
+        updatedAt: Date,
+        latestCheckIn: WatchSubjectiveCheckInPayload? = nil
+    ) {
         self.init(
             updatedAt: updatedAt,
             score: summary.score.overall,
             status: summary.score.status,
             headline: summary.score.status.headline,
             detail: summary.score.conciseExplanation,
+            latestCheckIn: latestCheckIn,
             metrics: [
                 WatchMetricPayload(
                     title: "心率",
@@ -235,7 +248,8 @@ extension WatchSummaryPayload {
             summary: SampleBodyData.summary,
             snapshot: SampleBodyData.dashboardSnapshot,
             trends: SampleBodyData.dashboardTrends,
-            updatedAt: Date()
+            updatedAt: Date(),
+            latestCheckIn: nil
         )
     }
 

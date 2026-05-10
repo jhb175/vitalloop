@@ -171,7 +171,8 @@ final class BodySummaryStore {
                 summary: summary,
                 snapshot: dashboardSnapshot,
                 trends: dashboardTrends,
-                updatedAt: updatedAt
+                updatedAt: updatedAt,
+                latestCheckIn: latestSubjectiveCheckIn
             )
         )
     }

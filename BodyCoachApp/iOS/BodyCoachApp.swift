@@ -14,7 +14,8 @@ struct BodyCoachApp: App {
                         UserGoal.self,
                         DailySummaryRecord.self,
                         SubjectiveCheckIn.self,
-                        WeightEntry.self
+                        WeightEntry.self,
+                        MealLogEntry.self
                     ]
                 )
         }

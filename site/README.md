@@ -22,4 +22,10 @@ If your GitHub username or repository name is different, update:
 4. The workflow in `.github/workflows/pages.yml` will publish the `site/` folder.
 5. Open the URL above and confirm the page is public before App Store submission.
 
-Before submission, replace the placeholder contact email in `privacy-policy.html`.
+Current app privacy policy URL:
+
+```text
+https://jhb175.github.io/vitalloop/privacy-policy.html
+```
+
+Use the same URL in App Store Connect before submission.

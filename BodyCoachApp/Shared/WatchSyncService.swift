@@ -143,6 +143,10 @@ final class WatchSyncService: NSObject {
 
         latestPayload = payload
         lastReceivedAt = receivedAt
+        if let latestCheckIn = payload.latestCheckIn {
+            lastCheckInAcknowledgedAt = receivedAt
+            receiveCheckIn(latestCheckIn, receivedAt: receivedAt)
+        }
         record("已收到 iPhone 今日摘要")
     }
 

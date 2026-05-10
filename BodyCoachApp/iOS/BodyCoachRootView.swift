@@ -36,7 +36,7 @@ struct BodyCoachRootView: View {
                     Label("计划", systemImage: "checklist")
                 }
 
-            CheckInLogView(store: store)
+            CheckInLogView(store: store, persistenceStore: persistenceStore)
                 .tabItem {
                     Label("记录", systemImage: "plus")
                 }
@@ -80,6 +80,11 @@ private struct TodayDashboardView: View {
                         dataSource: dataSource,
                         lastUpdated: lastUpdated,
                         connectAppleHealth: connectAppleHealth
+                    )
+                    HealthDataCoverageCard(
+                        snapshot: dashboardSnapshot,
+                        permissionState: permissionState,
+                        dataSource: dataSource
                     )
                     HeroStatusCard(summary: summary, dataSource: dataSource)
                     SubjectiveCheckInCard(checkIn: subjectiveCheckIn)
@@ -362,6 +367,210 @@ private struct HealthConnectionCard: View {
     }
 }
 
+private struct HealthDataCoverageCard: View {
+    let snapshot: BodyDashboardSnapshot
+    let permissionState: HealthPermissionState
+    let dataSource: BodySummaryDataSource
+
+    private var items: [HealthSignalCoverageItem] {
+        [
+            HealthSignalCoverageItem(
+                title: "活动能量",
+                isAvailable: snapshot.activeEnergyKcal != nil,
+                availableDetail: availableActiveEnergyDetail,
+                missingDetail: "影响活动分。请确认健康权限里的活动能量已开启。"
+            ),
+            HealthSignalCoverageItem(
+                title: "睡眠",
+                isAvailable: snapshot.sleepMinutes != nil,
+                availableDetail: snapshot.sleepDisplay.note,
+                missingDetail: "影响睡眠分。需要佩戴 Apple Watch 入睡，或开启睡眠专注/睡眠记录。"
+            ),
+            HealthSignalCoverageItem(
+                title: "HRV",
+                isAvailable: snapshot.hrvMs != nil,
+                availableDetail: availableHRVDetail,
+                missingDetail: "影响恢复分。HRV 通常由 Apple Watch 在睡眠或静息时自动写入。"
+            ),
+            HealthSignalCoverageItem(
+                title: "静息心率",
+                isAvailable: snapshot.restingHeartRateBpm != nil,
+                availableDetail: availableRestingHeartRateDetail,
+                missingDetail: "影响恢复分。请确认 Apple Watch 佩戴和心率权限。"
+            ),
+            HealthSignalCoverageItem(
+                title: "体重",
+                isAvailable: snapshot.weightKg != nil,
+                availableDetail: snapshot.weightTrendDisplay.note,
+                missingDetail: "影响体重趋势。可在记录页手动补记，或连接支持 HealthKit 的体重秤。"
+            ),
+            HealthSignalCoverageItem(
+                title: "锻炼",
+                isAvailable: snapshot.workoutMinutes != nil,
+                availableDetail: availableWorkoutDetail,
+                missingDetail: "影响活动解释。今日未记录锻炼时仍会参考活动能量和步数。"
+            )
+        ]
+    }
+
+    var body: some View {
+        GlassCard(cornerRadius: 24, padding: 14) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("健康数据覆盖")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text(coverageLabel)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(coverageColor)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(coverageColor.opacity(0.14), in: Capsule())
+                }
+
+                Text(coverageDetail)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.bcSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(spacing: 8) {
+                    ForEach(items) { item in
+                        HealthSignalCoverageRow(item: item)
+                    }
+                }
+            }
+        }
+    }
+
+    private var coverageLabel: String {
+        "\(snapshot.availableFieldCount)/\(snapshot.expectedFieldCount)"
+    }
+
+    private var coverageColor: Color {
+        switch permissionState {
+        case .authorized:
+            return .bcMint
+        case .partialData, .noData:
+            return .bcAmber
+        case .requesting:
+            return .bcBlue
+        default:
+            return .bcMuted
+        }
+    }
+
+    private var coverageDetail: String {
+        switch dataSource {
+        case .healthKit:
+            if missingCount == 0 {
+                return "今日核心信号已接入，评分可信度较高。"
+            }
+
+            return "缺少 \(missingCount) 类信号，评分会自动降低可信度，并在建议中避开强判断。"
+        case .sample:
+            return "当前显示模拟数据。连接 Apple 健康后，这里会显示真实缺失原因。"
+        }
+    }
+
+    private var missingCount: Int {
+        items.filter { !$0.isAvailable }.count
+    }
+
+    private var availableActiveEnergyDetail: String {
+        guard let activeEnergy = snapshot.activeEnergyKcal else {
+            return ""
+        }
+
+        if let steps = snapshot.stepCount {
+            return "\(activeEnergy.roundedString) kcal，步数 \(steps.roundedString)。"
+        }
+
+        return "\(activeEnergy.roundedString) kcal，缺少步数辅助解释。"
+    }
+
+    private var availableHRVDetail: String {
+        guard let hrv = snapshot.hrvMs else {
+            return ""
+        }
+
+        if let baseline = snapshot.hrvBaselineMs {
+            return "\(hrv.roundedString) ms，基线 \(baseline.roundedString) ms。"
+        }
+
+        return "\(hrv.roundedString) ms，暂缺 28 天基线。"
+    }
+
+    private var availableRestingHeartRateDetail: String {
+        guard let restingHeartRate = snapshot.restingHeartRateBpm else {
+            return ""
+        }
+
+        if let baseline = snapshot.restingHeartRateBaselineBpm {
+            return "\(restingHeartRate.roundedString) bpm，基线 \(baseline.roundedString) bpm。"
+        }
+
+        return "\(restingHeartRate.roundedString) bpm，暂缺 28 天基线。"
+    }
+
+    private var availableWorkoutDetail: String {
+        guard let workoutMinutes = snapshot.workoutMinutes else {
+            return ""
+        }
+
+        return "\(workoutMinutes.roundedString) 分钟锻炼。"
+    }
+}
+
+private struct HealthSignalCoverageItem: Identifiable {
+    let id = UUID()
+    let title: String
+    let isAvailable: Bool
+    let availableDetail: String
+    let missingDetail: String
+
+    var detail: String {
+        isAvailable ? availableDetail : missingDetail
+    }
+}
+
+private struct HealthSignalCoverageRow: View {
+    let item: HealthSignalCoverageItem
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: item.isAvailable ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(item.isAvailable ? Color.bcMint : Color.bcAmber)
+                .frame(width: 26, height: 26)
+                .background((item.isAvailable ? Color.bcMint : Color.bcAmber).opacity(0.13), in: Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text(item.title)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text(item.isAvailable ? "可用" : "缺失")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(item.isAvailable ? Color.bcMint : Color.bcAmber)
+                }
+
+                Text(item.detail)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.bcSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
 private struct SettingsPrivacyView: View {
     let store: BodySummaryStore
     let persistenceStore: BodyCoachPersistenceStore
@@ -564,6 +773,14 @@ private struct TrendHistoryView: View {
         Array(persistenceStore.recentDailySummaries.prefix(7).reversed())
     }
 
+    private var weightTrendRecords: [WeightEntry] {
+        Array(persistenceStore.recentWeightEntries.prefix(14).reversed())
+    }
+
+    private var checkInTrendRecords: [SubjectiveCheckIn] {
+        Array(persistenceStore.recentSubjectiveCheckIns.prefix(14).reversed())
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -575,6 +792,7 @@ private struct TrendHistoryView: View {
                     } else {
                         trendOverviewCard
                         dimensionGrid
+                        manualTrendGrid
                         recentSummaryList
                     }
                 }
@@ -587,6 +805,7 @@ private struct TrendHistoryView: View {
         }
         .task {
             persistenceStore.loadRecentDailySummaries()
+            persistenceStore.loadRecentLogs()
         }
     }
 
@@ -650,6 +869,19 @@ private struct TrendHistoryView: View {
             TrendDimensionCard(title: "恢复", value: averageText(\.recoveryScore), detail: dimensionDetail(\.recoveryScore), color: .bcBlue, records: records, keyPath: \.recoveryScore)
             TrendDimensionCard(title: "活动", value: averageText(\.activityScore), detail: dimensionDetail(\.activityScore), color: .bcMint, records: records, keyPath: \.activityScore)
             TrendDimensionCard(title: "体重趋势", value: averageText(\.weightTrendScore), detail: dimensionDetail(\.weightTrendScore), color: .bcViolet, records: records, keyPath: \.weightTrendScore)
+        }
+    }
+
+    private var manualTrendGrid: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("记录趋势")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(Color.bcInk)
+
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                WeightTrendCard(records: weightTrendRecords)
+                SubjectiveLoadTrendCard(records: checkInTrendRecords)
+            }
         }
     }
 
@@ -933,6 +1165,177 @@ private struct TrendDimensionCard: View {
     }
 }
 
+private struct WeightTrendCard: View {
+    let records: [WeightEntry]
+
+    var body: some View {
+        GlassCard(cornerRadius: 24, padding: 14) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("体重")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Color.bcSoft)
+
+                    Spacer()
+
+                    Text(records.count >= 2 ? deltaText : "待积累")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(deltaColor)
+                }
+
+                TrendValueSparkline(values: records.map(\.weightKg), color: .bcViolet)
+                    .frame(height: 42)
+                    .accessibilityLabel("体重记录趋势")
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(latestWeightText)
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color.bcInk)
+                    Text("kg")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcMuted)
+                }
+
+                Text(detailText)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.bcSoft)
+                    .lineLimit(2)
+            }
+        }
+    }
+
+    private var latestWeightText: String {
+        records.last?.weightKg.oneDecimalString ?? "--"
+    }
+
+    private var delta: Double? {
+        guard let first = records.first?.weightKg, let last = records.last?.weightKg, records.count >= 2 else {
+            return nil
+        }
+
+        return last - first
+    }
+
+    private var deltaText: String {
+        guard let delta else {
+            return "待积累"
+        }
+
+        return "\(delta.signedOneDecimalString)kg"
+    }
+
+    private var deltaColor: Color {
+        guard let delta else {
+            return .bcMuted
+        }
+
+        if delta < -0.2 {
+            return .bcMint
+        }
+
+        if delta > 0.2 {
+            return .bcAmber
+        }
+
+        return .bcBlue
+    }
+
+    private var detailText: String {
+        guard records.count >= 2 else {
+            return "记录页保存体重后，这里会显示手动体重趋势。"
+        }
+
+        return "近 \(records.count) 次记录，最新来自 \(records.last?.source ?? "iPhone")。"
+    }
+}
+
+private struct SubjectiveLoadTrendCard: View {
+    let records: [SubjectiveCheckIn]
+
+    var body: some View {
+        GlassCard(cornerRadius: 24, padding: 14) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("主观负荷")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Color.bcSoft)
+
+                    Spacer()
+
+                    Text(loadDirectionText)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(loadDirectionColor)
+                }
+
+                TrendValueSparkline(values: records.map(\.averageLoad), color: .bcAmber)
+                    .frame(height: 42)
+                    .accessibilityLabel("主观负荷趋势")
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(latestLoadText)
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color.bcInk)
+                    Text("/10")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcMuted)
+                }
+
+                if let latest = records.last {
+                    Text("压力 \(latest.stress) · 疲劳 \(latest.fatigue) · 饥饿 \(latest.hunger)")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.bcSoft)
+                        .lineLimit(2)
+                } else {
+                    Text("记录压力、疲劳、饥饿后，这里会展示负荷走向。")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.bcSoft)
+                        .lineLimit(2)
+                }
+            }
+        }
+    }
+
+    private var latestLoadText: String {
+        records.last?.averageLoad.oneDecimalString ?? "--"
+    }
+
+    private var loadDelta: Double? {
+        guard let first = records.first?.averageLoad, let last = records.last?.averageLoad, records.count >= 2 else {
+            return nil
+        }
+
+        return last - first
+    }
+
+    private var loadDirectionText: String {
+        guard let loadDelta else {
+            return "待积累"
+        }
+
+        if loadDelta >= 1 {
+            return "负荷上升"
+        }
+
+        if loadDelta <= -1 {
+            return "负荷下降"
+        }
+
+        return "基本稳定"
+    }
+
+    private var loadDirectionColor: Color {
+        guard let loadDelta else {
+            return .bcMuted
+        }
+
+        if loadDelta >= 1 {
+            return .bcAmber
+        }
+
+        return loadDelta <= -1 ? .bcMint : .bcBlue
+    }
+}
+
 private struct TrendRecordRow: View {
     let record: DailySummaryRecord
 
@@ -1002,10 +1405,15 @@ private struct TrendRecordRow: View {
 
 private struct CheckInLogView: View {
     let store: BodySummaryStore
+    let persistenceStore: BodyCoachPersistenceStore
 
     @State private var stress = 5.0
     @State private var fatigue = 4.0
     @State private var hunger = 5.0
+    @State private var weightText = ""
+    @State private var weightNote = ""
+    @State private var mealKind: MealLogKind = .normal
+    @State private var mealNote = ""
     @State private var didLoadLatestCheckIn = false
 
     var body: some View {
@@ -1015,6 +1423,10 @@ private struct CheckInLogView: View {
                     header
                     latestCheckInCard
                     quickEntryCard
+                    subjectiveHistoryCard
+                    weightEntryCard
+                    mealEntryCard
+                    recentLogCard
                     watchSyncCard
                     explanationCard
                 }
@@ -1029,6 +1441,7 @@ private struct CheckInLogView: View {
             loadLatestCheckInIfNeeded()
         }
         .onChange(of: store.latestSubjectiveCheckIn?.id) { _, _ in
+            persistenceStore.loadRecentLogs()
             loadLatestCheckIn()
         }
     }
@@ -1112,6 +1525,7 @@ private struct CheckInLogView: View {
                         fatigue: fatigueInt,
                         hunger: hungerInt
                     )
+                    persistenceStore.loadRecentLogs()
                 } label: {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
@@ -1124,6 +1538,178 @@ private struct CheckInLogView: View {
                     .background(Color.bcMint, in: Capsule())
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var weightEntryCard: some View {
+        GlassCard(cornerRadius: 30) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("体重记录")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+                    Spacer()
+                    if let latest = persistenceStore.recentWeightEntries.first {
+                        Text("\(latest.weightKg.oneDecimalString) kg")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.bcMint)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.bcMint.opacity(0.14), in: Capsule())
+                    }
+                }
+
+                TextField("今天体重，例如 76.8", text: $weightText)
+                    .keyboardType(.decimalPad)
+                    .textFieldStyle(.plain)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color.bcInk)
+                    .padding(12)
+                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                TextField("备注，可选", text: $weightNote)
+                    .textFieldStyle(.plain)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.bcInk)
+                    .padding(12)
+                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                Button {
+                    saveWeightEntry()
+                } label: {
+                    HStack {
+                        Image(systemName: "scalemass.fill")
+                        Text("保存体重")
+                    }
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color.bcInk)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.bcMint.opacity(canSaveWeight ? 0.2 : 0.08), in: Capsule())
+                    .overlay {
+                        Capsule()
+                            .stroke(Color.bcMint.opacity(canSaveWeight ? 0.42 : 0.14), lineWidth: 1)
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSaveWeight)
+            }
+        }
+    }
+
+    private var mealEntryCard: some View {
+        GlassCard(cornerRadius: 30) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("饮食简记")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+                    Spacer()
+                    if let latest = persistenceStore.recentMealLogs.first {
+                        Text(latest.kind.displayName)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.bcAmber)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.bcAmber.opacity(0.14), in: Capsule())
+                    }
+                }
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    ForEach(MealLogKind.allCases, id: \.self) { kind in
+                        Button {
+                            mealKind = kind
+                        } label: {
+                            Text(kind.displayName)
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(mealKind == kind ? Color(red: 0.03, green: 0.08, blue: 0.07) : Color.bcInk)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(mealKind == kind ? Color.bcAmber : Color.white.opacity(0.08), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                TextField("一句话记录，例如 晚餐偏油 / 蛋白够", text: $mealNote)
+                    .textFieldStyle(.plain)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.bcInk)
+                    .padding(12)
+                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                Button {
+                    saveMealLog()
+                } label: {
+                    HStack {
+                        Image(systemName: "fork.knife.circle.fill")
+                        Text("保存饮食简记")
+                    }
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color(red: 0.03, green: 0.08, blue: 0.07))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.bcAmber, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var recentLogCard: some View {
+        GlassCard(cornerRadius: 26, padding: 14) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("最近记录")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(Color.bcInk)
+
+                if recentLogRows.isEmpty {
+                    Text("还没有本地记录。保存主观状态、体重或饮食简记后，会显示在这里。")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.bcSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(recentLogRows.prefix(6)) { row in
+                            RecentLogRowView(row: row)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var subjectiveHistoryCard: some View {
+        GlassCard(cornerRadius: 26, padding: 14) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("主观记录历史")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text("\(persistenceStore.recentSubjectiveCheckIns.count) 条")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcViolet)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color.bcViolet.opacity(0.14), in: Capsule())
+                }
+
+                if persistenceStore.recentSubjectiveCheckIns.isEmpty {
+                    Text("当天可以记录多次。每条都会保留时间和来源，最新一条用于今日评分。")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.bcSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(Array(persistenceStore.recentSubjectiveCheckIns.prefix(8)), id: \.id) { record in
+                            CheckInHistoryRowView(record: record)
+                        }
+                    }
+                }
             }
         }
     }
@@ -1186,6 +1772,54 @@ private struct CheckInLogView: View {
 
     private var latestCheckIn: WatchSubjectiveCheckInPayload? {
         store.latestSubjectiveCheckIn
+    }
+
+    private var canSaveWeight: Bool {
+        parsedWeightKg != nil
+    }
+
+    private var parsedWeightKg: Double? {
+        Double(weightText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var recentLogRows: [RecentLogRow] {
+        let checkIns = persistenceStore.recentSubjectiveCheckIns.map { record in
+            RecentLogRow(
+                id: record.id,
+                date: record.capturedAt,
+                iconName: "waveform.path.ecg",
+                title: "主观状态",
+                detail: "压力 \(record.stress) · 疲劳 \(record.fatigue) · 饥饿 \(record.hunger)",
+                source: record.source,
+                color: .bcViolet
+            )
+        }
+
+        let weights = persistenceStore.recentWeightEntries.map { record in
+            RecentLogRow(
+                id: record.id,
+                date: record.capturedAt,
+                iconName: "scalemass.fill",
+                title: "体重",
+                detail: "\(record.weightKg.oneDecimalString) kg\(record.note.isEmpty ? "" : " · \(record.note)")",
+                source: record.source,
+                color: .bcMint
+            )
+        }
+
+        let meals = persistenceStore.recentMealLogs.map { record in
+            RecentLogRow(
+                id: record.id,
+                date: record.capturedAt,
+                iconName: "fork.knife",
+                title: "饮食",
+                detail: "\(record.kind.displayName)\(record.note.isEmpty ? "" : " · \(record.note)")",
+                source: record.source,
+                color: .bcAmber
+            )
+        }
+
+        return (checkIns + weights + meals).sorted { $0.date > $1.date }
     }
 
     private var latestStatusLabel: String {
@@ -1257,6 +1891,7 @@ private struct CheckInLogView: View {
         }
 
         didLoadLatestCheckIn = true
+        persistenceStore.loadRecentLogs()
         loadLatestCheckIn()
     }
 
@@ -1289,6 +1924,21 @@ private struct CheckInLogView: View {
         }
 
         return parts.joined(separator: " · ")
+    }
+
+    private func saveWeightEntry() {
+        guard let parsedWeightKg else {
+            return
+        }
+
+        persistenceStore.saveWeightEntry(weightKg: parsedWeightKg, note: weightNote)
+        weightText = ""
+        weightNote = ""
+    }
+
+    private func saveMealLog() {
+        persistenceStore.saveMealLog(kind: mealKind, note: mealNote)
+        mealNote = ""
     }
 }
 
@@ -1343,6 +1993,119 @@ private struct CheckInMetricPill: View {
     }
 }
 
+private struct CheckInHistoryRowView: View {
+    let record: SubjectiveCheckIn
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: iconName)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(statusColor)
+                .frame(width: 30, height: 30)
+                .background(statusColor.opacity(0.14), in: Circle())
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text(record.capturedAt.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text(record.source)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(statusColor)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(statusColor.opacity(0.12), in: Capsule())
+                }
+
+                HStack(spacing: 8) {
+                    miniMetric(title: "压力", value: record.stress)
+                    miniMetric(title: "疲劳", value: record.fatigue)
+                    miniMetric(title: "饥饿", value: record.hunger)
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var iconName: String {
+        record.averageLoad >= 7 ? "exclamationmark.circle.fill" : "checkmark.circle.fill"
+    }
+
+    private var statusColor: Color {
+        switch record.averageLoad {
+        case 0 ..< 4:
+            return .bcMint
+        case 4 ..< 7:
+            return .bcBlue
+        default:
+            return .bcAmber
+        }
+    }
+
+    private func miniMetric(title: String, value: Int) -> some View {
+        Text("\(title) \(value)")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(Color.bcSoft)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(Color.white.opacity(0.06), in: Capsule())
+    }
+}
+
+private struct RecentLogRow: Identifiable {
+    let id: UUID
+    let date: Date
+    let iconName: String
+    let title: String
+    let detail: String
+    let source: String
+    let color: Color
+}
+
+private struct RecentLogRowView: View {
+    let row: RecentLogRow
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: row.iconName)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(row.color)
+                .frame(width: 30, height: 30)
+                .background(row.color.opacity(0.14), in: Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text(row.title)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+                    Spacer()
+                    Text(row.date.formatted(date: .omitted, time: .shortened))
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(Color.bcMuted)
+                }
+
+                Text(row.detail)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.bcSoft)
+                    .lineLimit(2)
+            }
+
+            Text(row.source)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(row.color)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .background(row.color.opacity(0.12), in: Capsule())
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
 private struct GoalPlanView: View {
     let store: BodySummaryStore
     let persistenceStore: BodyCoachPersistenceStore
@@ -1363,9 +2126,11 @@ private struct GoalPlanView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     currentGoalCard
+                    goalQualityCard
                     goalFormCard
                     weeklyReviewCard
                     adjustmentAdviceCard
+                    weeklyActionCard
                     planBoundaryCard
                 }
                 .padding(.horizontal, 18)
@@ -1511,6 +2276,42 @@ private struct GoalPlanView: View {
         }
     }
 
+    private var goalQualityCard: some View {
+        let quality = goalQuality
+
+        return GlassCard(cornerRadius: 24, padding: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: quality.symbolName)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(quality.color)
+                    .frame(width: 38, height: 38)
+                    .background(quality.color.opacity(0.14), in: Circle())
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("目标质量检查")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(Color.bcInk)
+
+                        Spacer()
+
+                        Text(quality.badge)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(quality.color)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(quality.color.opacity(0.14), in: Capsule())
+                    }
+
+                    Text(quality.message)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.bcSoft)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
     private var weeklyReviewCard: some View {
         GlassCard(cornerRadius: 28) {
             VStack(alignment: .leading, spacing: 14) {
@@ -1576,6 +2377,33 @@ private struct GoalPlanView: View {
         }
     }
 
+    private var weeklyActionCard: some View {
+        GlassCard(cornerRadius: 24, padding: 14) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("本周行动")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Color.bcInk)
+
+                    Spacer()
+
+                    Text("3 项")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.bcMint)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color.bcMint.opacity(0.14), in: Capsule())
+                }
+
+                VStack(spacing: 8) {
+                    ForEach(Array(weeklyActions.enumerated()), id: \.offset) { index, action in
+                        PlanActionRow(index: index + 1, text: action)
+                    }
+                }
+            }
+        }
+    }
+
     private var planBoundaryCard: some View {
         GlassCard(cornerRadius: 24, padding: 14) {
             HStack(alignment: .top, spacing: 12) {
@@ -1604,14 +2432,17 @@ private struct GoalPlanView: View {
         }
 
         didLoadGoal = true
+        persistenceStore.loadRecentLogs()
+
+        let latestWeight = latestManualWeightKg ?? store.dashboardSnapshot.weightKg
         guard let goal = persistenceStore.currentGoal else {
-            if let weight = store.dashboardSnapshot.weightKg {
+            if let weight = latestWeight {
                 startWeightText = weight.oneDecimalString
             }
             return
         }
 
-        startWeightText = goal.startWeightKg?.oneDecimalString ?? store.dashboardSnapshot.weightKg?.oneDecimalString ?? ""
+        startWeightText = goal.startWeightKg?.oneDecimalString ?? latestWeight?.oneDecimalString ?? ""
         targetWeightText = goal.targetWeightKg?.oneDecimalString ?? ""
         weeklyLossText = goal.weeklyWeightLossTargetKg?.oneDecimalString ?? "0.5"
         workoutMinutesText = goal.preferredWorkoutMinutes.map(String.init) ?? "35"
@@ -1663,7 +2494,11 @@ private struct GoalPlanView: View {
     }
 
     private func currentWeight(for goal: UserGoal) -> Double? {
-        store.dashboardSnapshot.weightKg ?? goal.startWeightKg
+        latestManualWeightKg ?? store.dashboardSnapshot.weightKg ?? goal.startWeightKg
+    }
+
+    private var latestManualWeightKg: Double? {
+        persistenceStore.recentWeightEntries.first?.weightKg
     }
 
     private func remainingWeightLoss(for goal: UserGoal) -> Double? {
@@ -1817,6 +2652,115 @@ private struct GoalPlanView: View {
         )
     }
 
+    private var goalQuality: GoalAdjustmentAdvice {
+        guard let goal = persistenceStore.currentGoal else {
+            return GoalAdjustmentAdvice(
+                badge: "待设置",
+                symbolName: "target",
+                color: .bcMuted,
+                message: "先填写当前体重、目标体重、周下降目标和可运动时间，保存后这里会检查计划是否可执行。"
+            )
+        }
+
+        guard let current = currentWeight(for: goal), let target = goal.targetWeightKg else {
+            return GoalAdjustmentAdvice(
+                badge: "缺核心数据",
+                symbolName: "exclamationmark.circle.fill",
+                color: .bcAmber,
+                message: "当前体重或目标体重不完整。先在记录页补一次体重，再保存计划。"
+            )
+        }
+
+        guard current > target else {
+            return GoalAdjustmentAdvice(
+                badge: "目标反向",
+                symbolName: "arrow.down.right.circle.fill",
+                color: .bcAmber,
+                message: "目标体重需要低于当前体重。若不是减脂目标，后续需要单独增加其他目标类型。"
+            )
+        }
+
+        let remaining = current - target
+        let requiredWeeklyLoss = requiredWeeklyLossKg(remaining: remaining, targetDate: goal.targetDate)
+
+        if remaining > current * 0.2 {
+            return GoalAdjustmentAdvice(
+                badge: "跨度偏大",
+                symbolName: "flag.checkered.circle.fill",
+                color: .bcAmber,
+                message: "目标下降超过当前体重 20%。建议拆成阶段目标，先完成 5%-10% 的第一阶段。"
+            )
+        }
+
+        if let requiredWeeklyLoss, requiredWeeklyLoss > 0.8 {
+            return GoalAdjustmentAdvice(
+                badge: "日期偏紧",
+                symbolName: "calendar.badge.exclamationmark",
+                color: .bcAmber,
+                message: "按目标日期需要每周下降 \(requiredWeeklyLoss.oneDecimalString)kg，建议延长日期或降低目标幅度。"
+            )
+        }
+
+        if let weekly = goal.weeklyWeightLossTargetKg, weekly > 0.8 {
+            return GoalAdjustmentAdvice(
+                badge: "周目标偏快",
+                symbolName: "speedometer",
+                color: .bcAmber,
+                message: "周下降目标高于 0.8kg。更稳妥的范围通常是 0.3-0.7kg，并根据恢复状态调整。"
+            )
+        }
+
+        if goal.preferredWorkoutMinutes == nil || (goal.preferredWorkoutMinutes ?? 0) < 20 {
+            return GoalAdjustmentAdvice(
+                badge: "执行边界弱",
+                symbolName: "figure.walk.circle.fill",
+                color: .bcBlue,
+                message: "建议补充可持续的运动时间。哪怕每天 20-35 分钟，也比偶尔高强度更适合稳定推进。"
+            )
+        }
+
+        return GoalAdjustmentAdvice(
+            badge: "可执行",
+            symbolName: "checkmark.seal.fill",
+            color: .bcMint,
+            message: "当前目标、日期和运动边界基本匹配。后续根据 7 日复盘决定是否微调，不要按单日波动改计划。"
+        )
+    }
+
+    private var weeklyActions: [String] {
+        guard let goal = persistenceStore.currentGoal else {
+            return [
+                "补齐当前体重和目标体重，并保存第一版减脂目标。",
+                "连续 3 天记录体重、压力、疲劳和饥饿。",
+                "连接 Apple 健康，确认睡眠和恢复信号可用。"
+            ]
+        }
+
+        let recoveryAverage = average(weeklyReviewRecords.map { Double($0.recoveryScore) })
+        let completenessAverage = average(weeklyReviewRecords.map { Double($0.dataCompleteness) }) ?? 0
+        var actions: [String] = []
+
+        if completenessAverage < 65 {
+            actions.append("优先补齐睡眠、体重和主观记录，让复盘可信度超过 65%。")
+        }
+
+        if let recoveryAverage, recoveryAverage < 62 {
+            actions.append("本周训练不加量，把睡眠时间和低强度活动先做稳定。")
+        } else {
+            let minutes = goal.preferredWorkoutMinutes ?? 30
+            actions.append("维持每次 \(minutes) 分钟以内的可持续训练，不按单日状态突然加量。")
+        }
+
+        if let weekly = goal.weeklyWeightLossTargetKg {
+            actions.append("按每周 \(weekly.oneDecimalString)kg 的节奏观察，不因单日体重波动改变目标。")
+        } else {
+            actions.append("设置一个 0.3-0.7kg 的周下降参考值，便于下周复盘。")
+        }
+
+        actions.append("记录 1 条饮食简记，标记是否偏多、偏少或高油高糖。")
+        return Array(actions.prefix(3))
+    }
+
     private func requiredWeeklyLossKg(remaining: Double, targetDate: Date?) -> Double? {
         guard let targetDate else {
             return nil
@@ -1844,6 +2788,30 @@ private struct GoalAdjustmentAdvice {
     let symbolName: String
     let color: Color
     let message: String
+}
+
+private struct PlanActionRow: View {
+    let index: Int
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("\(index)")
+                .font(.caption.weight(.heavy))
+                .foregroundStyle(Color(red: 0.03, green: 0.08, blue: 0.07))
+                .frame(width: 24, height: 24)
+                .background(Color.bcMint, in: Circle())
+
+            Text(text)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(Color.bcSoft)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
 }
 
 private struct GoalProgressMeter: View {
@@ -2478,6 +3446,42 @@ private struct Sparkline: View {
                 }
             }
             .stroke(color, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+        }
+    }
+}
+
+private struct TrendValueSparkline: View {
+    let values: [Double]
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+
+            if normalizedValues.count >= 2 {
+                Sparkline(values: normalizedValues, color: color)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+            } else {
+                HStack(spacing: 6) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                    Text("趋势不足")
+                }
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(color.opacity(0.86))
+            }
+        }
+    }
+
+    private var normalizedValues: [Double] {
+        guard values.count >= 2, let minValue = values.min(), let maxValue = values.max() else {
+            return []
+        }
+
+        let range = max(maxValue - minValue, 0.1)
+        return values.map { value in
+            0.12 + ((value - minValue) / range) * 0.76
         }
     }
 }

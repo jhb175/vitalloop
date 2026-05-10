@@ -211,3 +211,61 @@ final class WeightEntry {
         self.note = note
     }
 }
+
+enum MealLogKind: String, Codable, CaseIterable {
+    case normal
+    case light
+    case heavy
+    case highProtein
+    case highSugarFat
+
+    var displayName: String {
+        switch self {
+        case .normal:
+            return "正常"
+        case .light:
+            return "偏少"
+        case .heavy:
+            return "偏多"
+        case .highProtein:
+            return "高蛋白"
+        case .highSugarFat:
+            return "高油高糖"
+        }
+    }
+}
+
+@Model
+final class MealLogEntry {
+    @Attribute(.unique) var id: UUID
+    var capturedAt: Date
+    var createdAt: Date
+    var kindRawValue: String
+    var note: String
+    var source: String
+
+    init(
+        id: UUID = UUID(),
+        capturedAt: Date = Date(),
+        createdAt: Date = Date(),
+        kind: MealLogKind,
+        note: String = "",
+        source: String = "iPhone"
+    ) {
+        self.id = id
+        self.capturedAt = capturedAt
+        self.createdAt = createdAt
+        self.kindRawValue = kind.rawValue
+        self.note = note
+        self.source = source
+    }
+
+    var kind: MealLogKind {
+        get {
+            MealLogKind(rawValue: kindRawValue) ?? .normal
+        }
+        set {
+            kindRawValue = newValue.rawValue
+        }
+    }
+}

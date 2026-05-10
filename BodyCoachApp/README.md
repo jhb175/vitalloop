@@ -36,10 +36,21 @@ BodyCoachApp/BodyCoachApp.xcodeproj
 
 ## 本地验证命令
 
+推荐使用统一脚本，顺序执行核心单测、iOS 构建和 watchOS 构建：
+
+```sh
+scripts/verify-local.sh
+```
+
+脚本会把 SwiftPM scratch、Clang module cache 和 Xcode DerivedData 固定在仓库内 `.build` / `.clang-module-cache` 目录，便于统一清理，也避免把大量缓存写到用户目录。
+
+如需手动执行，可使用：
+
 ```sh
 xcodebuild -project BodyCoachApp/BodyCoachApp.xcodeproj -scheme BodyCoachApp -destination 'generic/platform=iOS' -derivedDataPath BodyCoachApp/.build/iOSDerived CODE_SIGNING_ALLOWED=NO build
 xcodebuild -project BodyCoachApp/BodyCoachApp.xcodeproj -scheme BodyCoachWatch -destination 'generic/platform=watchOS' -derivedDataPath BodyCoachApp/.build/WatchDerived CODE_SIGNING_ALLOWED=NO build
-xcodebuild test -scheme BodyCoachCore -destination 'platform=macOS'
+cd BodyCoachCore
+CLANG_MODULE_CACHE_PATH="$PWD/.clang-module-cache" swift test --disable-sandbox --scratch-path .build
 ```
 
 ## 构建缓存清理

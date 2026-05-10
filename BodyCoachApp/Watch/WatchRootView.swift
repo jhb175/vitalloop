@@ -162,7 +162,7 @@ private struct WatchQuickLogShortcut: View {
 
                     Spacer(minLength: 4)
 
-                    Text(statusText)
+                    Text(store.checkInDeliveryLabel)
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.watchMint)
                         .lineLimit(1)
@@ -174,13 +174,6 @@ private struct WatchQuickLogShortcut: View {
         .accessibilityLabel("快速记录压力五疲劳四饥饿六")
     }
 
-    private var statusText: String {
-        guard let sentAt = store.lastCheckInSentAt else {
-            return "保存"
-        }
-
-        return sentAt.formatted(date: .omitted, time: .shortened)
-    }
 }
 
 private struct WatchInlineQuickLog: View {
@@ -243,11 +236,7 @@ private struct WatchInlineQuickLog: View {
     }
 
     private var syncLabel: String {
-        guard let sentAt = store.lastCheckInSentAt else {
-            return "记录后会同步到 iPhone"
-        }
-
-        return "已保存 \(sentAt.formatted(date: .omitted, time: .shortened))"
+        store.checkInSyncDetail
     }
 
     private var latestSummary: String {

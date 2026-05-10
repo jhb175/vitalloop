@@ -42,6 +42,30 @@ final class WatchSummaryStore {
         syncService.lastCheckInSentAt
     }
 
+    var checkInDeliveryLabel: String {
+        if let acknowledgedAt = syncService.lastCheckInAcknowledgedAt {
+            return "iPhone 已确认 \(acknowledgedAt.formatted(date: .omitted, time: .shortened))"
+        }
+
+        if let sentAt = syncService.lastCheckInSentAt {
+            return "已发送 \(sentAt.formatted(date: .omitted, time: .shortened))"
+        }
+
+        return "保存"
+    }
+
+    var checkInSyncDetail: String {
+        if let latestCheckIn = syncService.latestPayload?.latestCheckIn {
+            return "已计入评分 · \(latestCheckIn.compactSummary)"
+        }
+
+        if syncService.lastCheckInSentAt != nil {
+            return "等待 iPhone 回传评分"
+        }
+
+        return "记录后会同步到 iPhone"
+    }
+
     func activate() {
         syncService.activate()
     }
