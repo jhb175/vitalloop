@@ -17,6 +17,7 @@ final class BodySummaryStore {
     private(set) var permissionState: HealthPermissionState = .notRequested
     private(set) var dataSource: BodySummaryDataSource = .sample
     private(set) var lastUpdated: Date?
+    private(set) var lastHealthReadError: String?
     private(set) var latestSubjectiveCheckIn: WatchSubjectiveCheckInPayload?
     var currentGoal: UserGoal? {
         persistenceStore?.currentGoal
@@ -84,6 +85,7 @@ final class BodySummaryStore {
     func connectAppleHealth() async {
         guard healthKitClient.isHealthDataAvailable else {
             permissionState = .unavailable
+            lastHealthReadError = nil
             dataSource = .sample
             summary = SampleBodyData.summary
             dashboardSnapshot = SampleBodyData.dashboardSnapshot
@@ -96,7 +98,27 @@ final class BodySummaryStore {
 
         do {
             try await healthKitClient.requestAuthorization()
+        } catch HealthKitClientError.unavailable {
+            permissionState = .unavailable
+            lastHealthReadError = nil
+            dataSource = .sample
+            summary = SampleBodyData.summary
+            dashboardSnapshot = SampleBodyData.dashboardSnapshot
+            dashboardTrends = SampleBodyData.dashboardTrends
+            sendWatchSummary()
+            return
+        } catch {
+            permissionState = .denied(error.localizedDescription)
+            lastHealthReadError = error.localizedDescription
+            dataSource = .sample
+            summary = SampleBodyData.summary
+            dashboardSnapshot = SampleBodyData.dashboardSnapshot
+            dashboardTrends = SampleBodyData.dashboardTrends
+            sendWatchSummary()
+            return
+        }
 
+        do {
             async let snapshotTask = healthKitClient.todaySnapshot()
             async let trendsTask = healthKitClient.dashboardTrends()
 
@@ -106,6 +128,7 @@ final class BodySummaryStore {
 
             guard dashboard.hasAnyHealthSignal else {
                 permissionState = .noData
+                lastHealthReadError = nil
                 dataSource = .sample
                 summary = SampleBodyData.summary
                 dashboardSnapshot = SampleBodyData.dashboardSnapshot
@@ -119,11 +142,13 @@ final class BodySummaryStore {
             dashboardTrends = trends
             dataSource = .healthKit
             permissionState = state(for: dashboard)
+            lastHealthReadError = nil
             refreshSummary()
             lastUpdated = snapshot.date
             sendWatchSummary(updatedAt: snapshot.date)
         } catch {
-            permissionState = .noData
+            permissionState = .readFailed(error.localizedDescription)
+            lastHealthReadError = error.localizedDescription
             dataSource = .sample
             summary = SampleBodyData.summary
             dashboardSnapshot = SampleBodyData.dashboardSnapshot

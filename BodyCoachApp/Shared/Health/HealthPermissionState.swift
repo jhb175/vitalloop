@@ -7,6 +7,7 @@ enum HealthPermissionState: Equatable, Sendable {
     case authorized
     case partialData(Int, Int)
     case noData
+    case readFailed(String)
     case denied(String)
 
     var displayTitle: String {
@@ -23,6 +24,8 @@ enum HealthPermissionState: Equatable, Sendable {
             return "Apple 健康数据不完整"
         case .noData:
             return "未读到今日健康数据"
+        case .readFailed:
+            return "Apple 健康读取失败"
         case .denied:
             return "未连接 Apple 健康"
         }

@@ -18,6 +18,7 @@ struct BodyCoachRootView: View {
                 permissionState: store.permissionState,
                 dataSource: store.dataSource,
                 lastUpdated: store.lastUpdated,
+                lastHealthReadError: store.lastHealthReadError,
                 subjectiveCheckIn: store.latestSubjectiveCheckIn,
                 currentGoal: persistenceStore.currentGoal,
                 recentDailySummaries: persistenceStore.recentDailySummaries,
@@ -65,6 +66,7 @@ private struct TodayDashboardView: View {
     let permissionState: HealthPermissionState
     let dataSource: BodySummaryDataSource
     let lastUpdated: Date?
+    let lastHealthReadError: String?
     let subjectiveCheckIn: WatchSubjectiveCheckInPayload?
     let currentGoal: UserGoal?
     let recentDailySummaries: [DailySummaryRecord]
@@ -84,6 +86,7 @@ private struct TodayDashboardView: View {
                         permissionState: permissionState,
                         dataSource: dataSource,
                         lastUpdated: lastUpdated,
+                        lastHealthReadError: lastHealthReadError,
                         connectAppleHealth: connectAppleHealth
                     )
                     HealthDataCoverageCard(
@@ -257,6 +260,7 @@ private struct HealthConnectionCard: View {
     let permissionState: HealthPermissionState
     let dataSource: BodySummaryDataSource
     let lastUpdated: Date?
+    let lastHealthReadError: String?
     let connectAppleHealth: () async -> Void
 
     @State private var isConnecting = false
@@ -323,7 +327,7 @@ private struct HealthConnectionCard: View {
 
     private var showsConnectButton: Bool {
         switch permissionState {
-        case .notRequested, .noData, .denied:
+        case .notRequested, .noData, .readFailed, .denied:
             return true
         case .unavailable, .requesting, .authorized, .partialData:
             return false
@@ -336,7 +340,7 @@ private struct HealthConnectionCard: View {
             return "heart.text.square.fill"
         case .requesting:
             return "arrow.triangle.2.circlepath"
-        case .unavailable, .denied, .noData:
+        case .unavailable, .denied, .noData, .readFailed:
             return "exclamationmark.shield.fill"
         case .partialData:
             return "heart.text.square"
@@ -351,7 +355,7 @@ private struct HealthConnectionCard: View {
             return .bcMint
         case .requesting:
             return .bcBlue
-        case .unavailable, .denied, .noData, .partialData:
+        case .unavailable, .denied, .noData, .readFailed, .partialData:
             return .bcAmber
         case .notRequested:
             return .bcMuted
@@ -368,13 +372,17 @@ private struct HealthConnectionCard: View {
         case let .partialData(available, expected):
             return "已读取 \(available)/\(expected) 类信号，缺失部分会降低可信度。"
         case .noData:
-            return "没有读到今日健康样本，当前使用模拟数据预览。"
+            return "权限已返回，但今天没有读到健康样本。佩戴 Apple Watch 产生睡眠、心率或活动数据后再刷新。"
+        case let .readFailed(message):
+            let detail = lastHealthReadError ?? message
+            return "读取健康数据时发生错误：\(detail)。请确认健康权限后重试。"
         case .requesting:
             return "正在向系统请求读取活动、睡眠、心率、HRV 和体重。"
         case .unavailable:
             return "当前设备无法读取 HealthKit，先使用模拟数据继续预览。"
-        case .denied:
-            return "没有读取到 Apple 健康数据。你可以在系统设置中检查 VitalLoop 的健康权限。"
+        case let .denied(message):
+            let detail = lastHealthReadError ?? message
+            return "系统未授予健康读取权限：\(detail)。请在设置中允许 VitalLoop 读取健康数据。"
         case .notRequested:
             return "连接后会本地读取活动、睡眠、心率、HRV 和体重摘要；原始数据默认不上传。"
         }
@@ -467,7 +475,7 @@ private struct HealthDataCoverageCard: View {
         switch permissionState {
         case .authorized:
             return .bcMint
-        case .partialData, .noData:
+        case .partialData, .noData, .readFailed:
             return .bcAmber
         case .requesting:
             return .bcBlue
@@ -834,10 +842,16 @@ private struct SettingsPrivacyView: View {
                 detail: "权限流程可用，但今日没有读到健康样本。真机验收时先佩戴 Apple Watch 产生睡眠、心率或活动数据。",
                 color: .bcAmber
             )
-        case .denied:
+        case let .readFailed(message):
+            return DeviceReadinessState(
+                badge: "读取失败",
+                detail: "HealthKit 返回错误：\(message)。请确认系统健康权限和设备数据后重试。",
+                color: .bcAmber
+            )
+        case let .denied(message):
             return DeviceReadinessState(
                 badge: "未授权",
-                detail: "需要在系统设置里允许 VitalLoop 读取健康数据，再回到首页点击连接 Apple 健康。",
+                detail: "需要在系统设置里允许 VitalLoop 读取健康数据，再回到首页点击连接 Apple 健康。系统返回：\(message)",
                 color: .bcAmber
             )
         case .unavailable:
