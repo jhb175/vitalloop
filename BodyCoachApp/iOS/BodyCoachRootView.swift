@@ -1993,8 +1993,11 @@ private struct CheckInLogView: View {
             loadLatestCheckInIfNeeded()
         }
         .onChange(of: store.latestSubjectiveCheckIn?.id) { _, _ in
-            persistenceStore.loadRecentLogs()
+            reloadLogsForCurrentFilter()
             loadLatestCheckIn()
+        }
+        .onChange(of: logFilter) { _, _ in
+            reloadLogsForCurrentFilter()
         }
         .sheet(item: $editingLog) { log in
             LogEditSheet(
@@ -2084,7 +2087,7 @@ private struct CheckInLogView: View {
                         fatigue: fatigueInt,
                         hunger: hungerInt
                     )
-                    persistenceStore.loadRecentLogs()
+                    reloadLogsForCurrentFilter()
                 } label: {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
@@ -2246,8 +2249,8 @@ private struct CheckInLogView: View {
                         .foregroundStyle(Color.bcSoft)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    VStack(spacing: 8) {
-                        ForEach(filteredLogRows.prefix(12)) { row in
+                    LazyVStack(spacing: 8) {
+                        ForEach(filteredLogRows) { row in
                             RecentLogRowView(
                                 row: row,
                                 edit: {
@@ -2289,7 +2292,7 @@ private struct CheckInLogView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     VStack(spacing: 8) {
-                        ForEach(Array(filteredSubjectiveCheckIns.prefix(8)), id: \.id) { record in
+                        ForEach(filteredSubjectiveCheckIns, id: \.id) { record in
                             CheckInHistoryRowView(
                                 record: record,
                                 edit: {
@@ -2508,8 +2511,12 @@ private struct CheckInLogView: View {
         }
 
         didLoadLatestCheckIn = true
-        persistenceStore.loadRecentLogs()
+        reloadLogsForCurrentFilter()
         loadLatestCheckIn()
+    }
+
+    private func reloadLogsForCurrentFilter() {
+        persistenceStore.loadRecentLogs(limit: logFilter.fetchLimit)
     }
 
     private func loadLatestCheckIn() {
@@ -2549,12 +2556,14 @@ private struct CheckInLogView: View {
         }
 
         persistenceStore.saveWeightEntry(weightKg: parsedWeightKg, note: weightNote)
+        reloadLogsForCurrentFilter()
         weightText = ""
         weightNote = ""
     }
 
     private func saveMealLog() {
         persistenceStore.saveMealLog(kind: mealKind, note: mealNote)
+        reloadLogsForCurrentFilter()
         mealNote = ""
     }
 
@@ -2581,6 +2590,8 @@ private struct CheckInLogView: View {
 
             persistenceStore.updateMealLog(id: draft.id, kind: mealKind, note: draft.note)
         }
+
+        reloadLogsForCurrentFilter()
     }
 
     private func deleteLog(_ log: EditableLog) {
@@ -2594,6 +2605,8 @@ private struct CheckInLogView: View {
         case let .meal(record):
             persistenceStore.deleteMealLog(id: record.id)
         }
+
+        reloadLogsForCurrentFilter()
     }
 }
 
@@ -2666,6 +2679,10 @@ private enum LogDateFilter: String, CaseIterable, Identifiable {
         case .all:
             return "全部"
         }
+    }
+
+    var fetchLimit: Int? {
+        nil
     }
 
     func contains(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> Bool {

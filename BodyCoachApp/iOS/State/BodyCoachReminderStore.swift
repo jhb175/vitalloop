@@ -110,6 +110,7 @@ final class BodyCoachReminderStore {
             schedule(Reminder(identifier: identifier, title: title, body: body), at: time)
         } else {
             center.removePendingNotificationRequests(withIdentifiers: [identifier])
+            lastReminderError = nil
         }
     }
 
@@ -234,4 +235,3 @@ private enum Keys {
     static let sleepTime = "reminder.sleep.time"
     static let mealTime = "reminder.meal.time"
 }
-

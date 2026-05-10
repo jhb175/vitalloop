@@ -200,7 +200,7 @@ final class BodyCoachPersistenceStore {
         }
     }
 
-    func loadRecentDailySummaries(limit: Int = 30) {
+    func loadRecentDailySummaries(limit: Int? = 30) {
         do {
             recentDailySummaries = try recentDailySummaryRecords(limit: limit)
             lastPersistenceError = nil
@@ -209,7 +209,7 @@ final class BodyCoachPersistenceStore {
         }
     }
 
-    func loadRecentLogs(limit: Int = 30) {
+    func loadRecentLogs(limit: Int? = 30) {
         do {
             recentSubjectiveCheckIns = try recentSubjectiveCheckInRecords(limit: limit)
             recentWeightEntries = try recentWeightEntryRecords(limit: limit)
@@ -420,7 +420,7 @@ final class BodyCoachPersistenceStore {
         return try modelContext.fetch(descriptor).first
     }
 
-    private func recentDailySummaryRecords(limit: Int) throws -> [DailySummaryRecord] {
+    private func recentDailySummaryRecords(limit: Int?) throws -> [DailySummaryRecord] {
         guard let modelContext else {
             return []
         }
@@ -428,11 +428,13 @@ final class BodyCoachPersistenceStore {
         var descriptor = FetchDescriptor<DailySummaryRecord>(
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
-        descriptor.fetchLimit = limit
+        if let limit {
+            descriptor.fetchLimit = limit
+        }
         return try modelContext.fetch(descriptor)
     }
 
-    private func recentSubjectiveCheckInRecords(limit: Int) throws -> [SubjectiveCheckIn] {
+    private func recentSubjectiveCheckInRecords(limit: Int?) throws -> [SubjectiveCheckIn] {
         guard let modelContext else {
             return []
         }
@@ -440,11 +442,13 @@ final class BodyCoachPersistenceStore {
         var descriptor = FetchDescriptor<SubjectiveCheckIn>(
             sortBy: [SortDescriptor(\.capturedAt, order: .reverse)]
         )
-        descriptor.fetchLimit = limit
+        if let limit {
+            descriptor.fetchLimit = limit
+        }
         return try modelContext.fetch(descriptor)
     }
 
-    private func recentWeightEntryRecords(limit: Int) throws -> [WeightEntry] {
+    private func recentWeightEntryRecords(limit: Int?) throws -> [WeightEntry] {
         guard let modelContext else {
             return []
         }
@@ -452,11 +456,13 @@ final class BodyCoachPersistenceStore {
         var descriptor = FetchDescriptor<WeightEntry>(
             sortBy: [SortDescriptor(\.capturedAt, order: .reverse)]
         )
-        descriptor.fetchLimit = limit
+        if let limit {
+            descriptor.fetchLimit = limit
+        }
         return try modelContext.fetch(descriptor)
     }
 
-    private func recentMealLogRecords(limit: Int) throws -> [MealLogEntry] {
+    private func recentMealLogRecords(limit: Int?) throws -> [MealLogEntry] {
         guard let modelContext else {
             return []
         }
@@ -464,7 +470,9 @@ final class BodyCoachPersistenceStore {
         var descriptor = FetchDescriptor<MealLogEntry>(
             sortBy: [SortDescriptor(\.capturedAt, order: .reverse)]
         )
-        descriptor.fetchLimit = limit
+        if let limit {
+            descriptor.fetchLimit = limit
+        }
         return try modelContext.fetch(descriptor)
     }
 }
