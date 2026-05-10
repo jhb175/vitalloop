@@ -4,6 +4,7 @@ enum HealthPermissionState: Equatable, Sendable {
     case notRequested
     case unavailable
     case requesting
+    case refreshing
     case authorized
     case partialData(Int, Int)
     case noData
@@ -18,6 +19,8 @@ enum HealthPermissionState: Equatable, Sendable {
             return "此设备不支持 HealthKit"
         case .requesting:
             return "正在请求健康权限"
+        case .refreshing:
+            return "正在读取 Apple 健康"
         case .authorized:
             return "已连接 Apple 健康"
         case .partialData:

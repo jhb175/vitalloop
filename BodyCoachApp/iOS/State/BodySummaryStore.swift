@@ -9,7 +9,9 @@ final class BodySummaryStore {
     private let healthKitClient: HealthKitClient
     private let scorer: BodyCoachScorer
     private let watchSyncService: WatchSyncService
+    private let defaults: UserDefaults
     private var persistenceStore: BodyCoachPersistenceStore?
+    private var hasAttemptedInitialHealthRefresh = false
 
     private(set) var summary: DailyBodySummary
     private(set) var dashboardSnapshot: BodyDashboardSnapshot
@@ -42,14 +44,19 @@ final class BodySummaryStore {
     init(
         healthKitClient: HealthKitClient = HealthKitClient(),
         scorer: BodyCoachScorer = BodyCoachScorer(),
-        watchSyncService: WatchSyncService = .shared
+        watchSyncService: WatchSyncService = .shared,
+        defaults: UserDefaults = .standard
     ) {
         self.healthKitClient = healthKitClient
         self.scorer = scorer
         self.watchSyncService = watchSyncService
+        self.defaults = defaults
         self.summary = SampleBodyData.summary
         self.dashboardSnapshot = SampleBodyData.dashboardSnapshot
         self.dashboardTrends = SampleBodyData.dashboardTrends
+        if defaults.bool(forKey: Self.healthConnectionRequestedKey) {
+            self.permissionState = .refreshing
+        }
         self.watchSyncService.onCheckInReceived = { [weak self] checkIn in
             self?.handleSubjectiveCheckIn(checkIn)
         }
@@ -78,19 +85,24 @@ final class BodySummaryStore {
         sendWatchSummary()
     }
 
+    func refreshAppleHealthIfPreviouslyConnected() async {
+        guard defaults.bool(forKey: Self.healthConnectionRequestedKey),
+              !hasAttemptedInitialHealthRefresh
+        else {
+            return
+        }
+
+        hasAttemptedInitialHealthRefresh = true
+        await readAppleHealth(markConnected: false)
+    }
+
     func runWatchConnectivityTest() {
         watchSyncService.runConnectivityTest()
     }
 
     func connectAppleHealth() async {
         guard healthKitClient.isHealthDataAvailable else {
-            permissionState = .unavailable
-            lastHealthReadError = nil
-            dataSource = .sample
-            summary = SampleBodyData.summary
-            dashboardSnapshot = SampleBodyData.dashboardSnapshot
-            dashboardTrends = SampleBodyData.dashboardTrends
-            sendWatchSummary()
+            resetToSampleData(permissionState: .unavailable)
             return
         }
 
@@ -99,24 +111,28 @@ final class BodySummaryStore {
         do {
             try await healthKitClient.requestAuthorization()
         } catch HealthKitClientError.unavailable {
-            permissionState = .unavailable
-            lastHealthReadError = nil
-            dataSource = .sample
-            summary = SampleBodyData.summary
-            dashboardSnapshot = SampleBodyData.dashboardSnapshot
-            dashboardTrends = SampleBodyData.dashboardTrends
-            sendWatchSummary()
+            resetToSampleData(permissionState: .unavailable)
             return
         } catch {
-            permissionState = .denied(error.localizedDescription)
-            lastHealthReadError = error.localizedDescription
-            dataSource = .sample
-            summary = SampleBodyData.summary
-            dashboardSnapshot = SampleBodyData.dashboardSnapshot
-            dashboardTrends = SampleBodyData.dashboardTrends
-            sendWatchSummary()
+            resetToSampleData(permissionState: .denied(error.localizedDescription), errorMessage: error.localizedDescription)
             return
         }
+
+        defaults.set(true, forKey: Self.healthConnectionRequestedKey)
+        await readAppleHealth(markConnected: true)
+    }
+
+    func refreshAppleHealth() async {
+        await readAppleHealth(markConnected: false)
+    }
+
+    private func readAppleHealth(markConnected: Bool) async {
+        guard healthKitClient.isHealthDataAvailable else {
+            resetToSampleData(permissionState: .unavailable)
+            return
+        }
+
+        permissionState = markConnected ? .requesting : .refreshing
 
         do {
             async let snapshotTask = healthKitClient.todaySnapshot()
@@ -143,6 +159,7 @@ final class BodySummaryStore {
             dataSource = .healthKit
             permissionState = state(for: dashboard)
             lastHealthReadError = nil
+            defaults.set(true, forKey: Self.healthConnectionRequestedKey)
             refreshSummary()
             lastUpdated = snapshot.date
             sendWatchSummary(updatedAt: snapshot.date)
@@ -245,6 +262,18 @@ final class BodySummaryStore {
 
         return .partialData(available, expected)
     }
+
+    private func resetToSampleData(permissionState: HealthPermissionState, errorMessage: String? = nil) {
+        self.permissionState = permissionState
+        lastHealthReadError = errorMessage
+        dataSource = .sample
+        summary = SampleBodyData.summary
+        dashboardSnapshot = SampleBodyData.dashboardSnapshot
+        dashboardTrends = SampleBodyData.dashboardTrends
+        sendWatchSummary()
+    }
+
+    private static let healthConnectionRequestedKey = "vitalloop.healthKit.connectionRequested"
 }
 
 enum BodySummaryDataSource: Equatable, Sendable {

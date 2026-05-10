@@ -57,6 +57,7 @@ struct BodyCoachRootView: View {
             store.configurePersistence(persistenceStore)
             store.activateWatchSync()
             reminderStore.activateNotificationRouting()
+            await store.refreshAppleHealthIfPreviouslyConnected()
         }
         .onChange(of: reminderStore.pendingRouteRequest) { _, request in
             handleReminderRouteRequest(request)
@@ -275,7 +276,7 @@ private struct FirstRunGuideCard: View {
                             }
                         }
                         .buttonStyle(.plain)
-                        .disabled(isConnecting || permissionState == .requesting)
+                        .disabled(isConnecting || permissionState == .requesting || permissionState == .refreshing)
                     }
                 }
             }
@@ -286,7 +287,7 @@ private struct FirstRunGuideCard: View {
         switch permissionState {
         case .authorized, .partialData:
             return true
-        case .notRequested, .requesting, .unavailable, .denied, .noData, .readFailed:
+        case .notRequested, .requesting, .refreshing, .unavailable, .denied, .noData, .readFailed:
             return false
         }
     }
@@ -295,7 +296,7 @@ private struct FirstRunGuideCard: View {
         switch permissionState {
         case .notRequested, .denied, .noData, .readFailed:
             return true
-        case .authorized, .partialData, .requesting, .unavailable:
+        case .authorized, .partialData, .requesting, .refreshing, .unavailable:
             return false
         }
     }
@@ -320,6 +321,8 @@ private struct FirstRunGuideCard: View {
             return "已接入部分信号，缺失项会降低可信度。"
         case .requesting:
             return "正在等待系统权限返回。"
+        case .refreshing:
+            return "正在自动读取 Apple 健康。"
         case .noData:
             return "已授权但今天暂无样本，佩戴 Watch 或添加样本后重读。"
         case .denied:
@@ -509,6 +512,7 @@ private struct HealthConnectionCard: View {
     let lastUpdated: Date?
     let lastHealthReadError: String?
     let connectAppleHealth: () async -> Void
+    let refreshAppleHealth: () async -> Void
 
     @State private var isConnecting = false
 
@@ -546,7 +550,11 @@ private struct HealthConnectionCard: View {
                     Button {
                         Task {
                             isConnecting = true
-                            await connectAppleHealth()
+                            if shouldRequestAuthorization {
+                                await connectAppleHealth()
+                            } else {
+                                await refreshAppleHealth()
+                            }
                             isConnecting = false
                         }
                     } label: {
@@ -566,9 +574,18 @@ private struct HealthConnectionCard: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .disabled(isConnecting || permissionState == .requesting)
+                    .disabled(isConnecting || permissionState == .requesting || permissionState == .refreshing)
                 }
             }
+        }
+    }
+
+    private var shouldRequestAuthorization: Bool {
+        switch permissionState {
+        case .notRequested, .denied:
+            return true
+        case .authorized, .partialData, .noData, .readFailed, .requesting, .refreshing, .unavailable:
+            return false
         }
     }
 
@@ -576,7 +593,7 @@ private struct HealthConnectionCard: View {
         switch permissionState {
         case .notRequested, .authorized, .partialData, .noData, .readFailed, .denied:
             return true
-        case .unavailable, .requesting:
+        case .unavailable, .requesting, .refreshing:
             return false
         }
     }
@@ -591,8 +608,8 @@ private struct HealthConnectionCard: View {
             return "重新读取 Apple 健康"
         case .denied, .notRequested:
             return "连接 Apple 健康"
-        case .requesting:
-            return "连接中"
+        case .requesting, .refreshing:
+            return "读取中"
         case .unavailable:
             return "不可用"
         }
@@ -602,7 +619,7 @@ private struct HealthConnectionCard: View {
         switch permissionState {
         case .authorized:
             return "heart.text.square.fill"
-        case .requesting:
+        case .requesting, .refreshing:
             return "arrow.triangle.2.circlepath"
         case .unavailable, .denied, .noData, .readFailed:
             return "exclamationmark.shield.fill"
@@ -617,7 +634,7 @@ private struct HealthConnectionCard: View {
         switch permissionState {
         case .authorized:
             return .bcMint
-        case .requesting:
+        case .requesting, .refreshing:
             return .bcBlue
         case .unavailable, .denied, .noData, .readFailed, .partialData:
             return .bcAmber
@@ -636,12 +653,14 @@ private struct HealthConnectionCard: View {
         case let .partialData(available, expected):
             return "已读取 \(available)/\(expected) 类信号，缺失部分会降低可信度。"
         case .noData:
-            return "权限已返回，但今天没有读到健康样本。佩戴 Apple Watch 产生睡眠、心率或活动数据后再刷新。"
+            return "已连接过 Apple 健康，但今天没有读到健康样本。佩戴 Apple Watch 产生睡眠、心率或活动数据后再刷新。"
         case let .readFailed(message):
             let detail = lastHealthReadError ?? message
             return "读取健康数据时发生错误：\(detail)。请确认健康权限后重试。"
         case .requesting:
             return "正在向系统请求读取活动、睡眠、心率、HRV 和体重。"
+        case .refreshing:
+            return "已连接过 Apple 健康，正在自动刷新今日摘要。"
         case .unavailable:
             return "当前设备无法读取 HealthKit，先使用模拟数据继续预览。"
         case let .denied(message):
@@ -741,7 +760,7 @@ private struct HealthDataCoverageCard: View {
             return .bcMint
         case .partialData, .noData, .readFailed:
             return .bcAmber
-        case .requesting:
+        case .requesting, .refreshing:
             return .bcBlue
         default:
             return .bcMuted
@@ -1035,6 +1054,9 @@ private struct DataAuthorizationSettingsView: View {
                     lastHealthReadError: store.lastHealthReadError,
                     connectAppleHealth: {
                         await store.connectAppleHealth()
+                    },
+                    refreshAppleHealth: {
+                        await store.refreshAppleHealth()
                     }
                 )
 
@@ -1160,6 +1182,12 @@ private struct DataAuthorizationSettingsView: View {
             return DeviceReadinessState(
                 badge: "请求中",
                 detail: "正在等待系统健康权限面板返回结果。",
+                color: .bcBlue
+            )
+        case .refreshing:
+            return DeviceReadinessState(
+                badge: "读取中",
+                detail: "已连接过 Apple 健康，正在自动读取今日摘要。",
                 color: .bcBlue
             )
         case .noData:
