@@ -14,13 +14,8 @@ struct BodyCoachRootView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             TodayDashboardView(
-                summary: store.summary,
-                dashboardSnapshot: store.dashboardSnapshot,
-                dashboardTrends: store.dashboardTrends,
-                dataSource: store.dataSource,
-                subjectiveCheckIn: store.latestSubjectiveCheckIn,
-                currentGoal: persistenceStore.currentGoal,
-                recentDailySummaries: persistenceStore.recentDailySummaries
+                store: store,
+                persistenceStore: persistenceStore
             )
                 .tabItem {
                     Label("今日", systemImage: "heart.fill")
@@ -89,13 +84,8 @@ private enum BodyCoachTab: Hashable {
 }
 
 private struct TodayDashboardView: View {
-    let summary: DailyBodySummary
-    let dashboardSnapshot: BodyDashboardSnapshot
-    let dashboardTrends: BodyDashboardTrends
-    let dataSource: BodySummaryDataSource
-    let subjectiveCheckIn: WatchSubjectiveCheckInPayload?
-    let currentGoal: UserGoal?
-    let recentDailySummaries: [DailySummaryRecord]
+    let store: BodySummaryStore
+    let persistenceStore: BodyCoachPersistenceStore
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -105,10 +95,10 @@ private struct TodayDashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                LazyVStack(alignment: .leading, spacing: 18) {
                     header
-                    HeroStatusCard(summary: summary, dataSource: dataSource)
-                    SubjectiveCheckInCard(checkIn: subjectiveCheckIn)
+                    HeroStatusCard(summary: store.summary, dataSource: store.dataSource)
+                    SubjectiveCheckInCard(checkIn: store.latestSubjectiveCheckIn)
 
                     Text("今日监测")
                         .font(.title2.weight(.bold))
@@ -117,14 +107,14 @@ private struct TodayDashboardView: View {
                     RhythmCard()
 
                     LazyVGrid(columns: columns, spacing: 12) {
-                        MetricTile(title: "活动能量", display: dashboardSnapshot.activeEnergyDisplay, color: .bcMint, trend: dashboardTrends.activeEnergy)
-                        MetricTile(title: "睡眠", display: dashboardSnapshot.sleepDisplay, color: .bcAmber, trend: dashboardTrends.sleep)
-                        MetricTile(title: "恢复信号", display: dashboardSnapshot.recoveryDisplay, color: .bcBlue, trend: dashboardTrends.recovery)
-                        MetricTile(title: "体重趋势", display: dashboardSnapshot.weightTrendDisplay, color: .bcViolet, trend: dashboardTrends.weight)
+                        MetricTile(title: "活动能量", display: store.dashboardSnapshot.activeEnergyDisplay, color: .bcMint, trend: store.dashboardTrends.activeEnergy)
+                        MetricTile(title: "睡眠", display: store.dashboardSnapshot.sleepDisplay, color: .bcAmber, trend: store.dashboardTrends.sleep)
+                        MetricTile(title: "恢复信号", display: store.dashboardSnapshot.recoveryDisplay, color: .bcBlue, trend: store.dashboardTrends.recovery)
+                        MetricTile(title: "体重趋势", display: store.dashboardSnapshot.weightTrendDisplay, color: .bcViolet, trend: store.dashboardTrends.weight)
                     }
 
-                    InsightTable(summary: summary, dashboardSnapshot: dashboardSnapshot)
-                    RecommendationSection(recommendations: summary.recommendations)
+                    InsightTable(summary: store.summary, dashboardSnapshot: store.dashboardSnapshot)
+                    RecommendationSection(recommendations: store.summary.recommendations)
                     TodayPlanActionSection(actions: todayPlanActions)
                 }
                 .padding(.horizontal, 18)
@@ -138,9 +128,9 @@ private struct TodayDashboardView: View {
 
     private var todayPlanActions: [String] {
         PlanActionGenerator.actions(
-            goal: currentGoal,
-            records: recentDailySummaries,
-            preferredWorkoutMinutes: currentGoal?.preferredWorkoutMinutes
+            goal: persistenceStore.currentGoal,
+            records: persistenceStore.recentDailySummaries,
+            preferredWorkoutMinutes: persistenceStore.currentGoal?.preferredWorkoutMinutes
         )
     }
 
@@ -157,15 +147,15 @@ private struct TodayDashboardView: View {
 
             Spacer()
 
-            Text(dataSource.displayName)
+            Text(store.dataSource.displayName)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(dataSource == .healthKit ? Color.bcMint : Color.bcBlue)
+                .foregroundStyle(store.dataSource == .healthKit ? Color.bcMint : Color.bcBlue)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 7)
-                .background((dataSource == .healthKit ? Color.bcMint : Color.bcBlue).opacity(0.14), in: Capsule())
+                .background((store.dataSource == .healthKit ? Color.bcMint : Color.bcBlue).opacity(0.14), in: Capsule())
                 .overlay {
                     Capsule()
-                        .stroke((dataSource == .healthKit ? Color.bcMint : Color.bcBlue).opacity(0.28), lineWidth: 1)
+                        .stroke((store.dataSource == .healthKit ? Color.bcMint : Color.bcBlue).opacity(0.28), lineWidth: 1)
                 }
         }
     }
@@ -894,7 +884,7 @@ private struct SettingsPrivacyView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     header
 
                     SettingsNavigationCard(
@@ -1052,7 +1042,7 @@ private struct DataAuthorizationSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            LazyVStack(alignment: .leading, spacing: 16) {
                 pageHeader
 
                 HealthConnectionCard(
@@ -1397,7 +1387,7 @@ private struct MoreSupportSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            LazyVStack(alignment: .leading, spacing: 16) {
                 pageHeader
 
                 SettingsSection(title: "隐私与健康数据") {
@@ -1787,7 +1777,7 @@ private struct TrendHistoryView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     header
 
                     if records.isEmpty {
@@ -2976,7 +2966,7 @@ private struct CheckInLogView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     header
                     latestCheckInCard
                     quickEntryCard
@@ -4242,7 +4232,7 @@ private struct GoalPlanView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     header
                     currentGoalCard
                     goalQualityCard
@@ -5516,53 +5506,12 @@ private struct GlassCard<Content: View>: View {
             .padding(padding)
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.11, green: 0.13, blue: 0.14).opacity(0.92),
-                                Color(red: 0.07, green: 0.09, blue: 0.10).opacity(0.88),
-                                Color(red: 0.04, green: 0.05, blue: 0.06).opacity(0.9)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.bcCard)
                     .overlay {
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.12),
-                                        Color.white.opacity(0.03),
-                                        Color.bcMint.opacity(0.02),
-                                        Color.black.opacity(0.12)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .stroke(Color.bcStroke, lineWidth: 1)
                     }
-                    .overlay(alignment: .topLeading) {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.34),
-                                        Color.white.opacity(0.1),
-                                        Color.white.opacity(0.06)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
-                            )
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(Color.black.opacity(0.36), lineWidth: 0.5)
-                    }
-                    .shadow(color: Color.black.opacity(0.38), radius: 24, x: 0, y: 16)
-                    .shadow(color: Color.bcMint.opacity(0.07), radius: 18, x: -8, y: -8)
+                    .shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 5)
             }
     }
 }
@@ -5660,47 +5609,32 @@ private struct TrendValueSparkline: View {
 
 private struct BodyCoachBackground: View {
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.05, green: 0.08, blue: 0.09),
-                    Color(red: 0.02, green: 0.03, blue: 0.04),
-                    Color(red: 0.08, green: 0.08, blue: 0.1)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            Circle()
-                .fill(Color.bcMint.opacity(0.2))
-                .frame(width: 230, height: 230)
-                .blur(radius: 80)
-                .offset(x: -150, y: -260)
-
-            Circle()
-                .fill(Color.bcBlue.opacity(0.18))
-                .frame(width: 280, height: 280)
-                .blur(radius: 95)
-                .offset(x: 160, y: -110)
-
-            Circle()
-                .fill(Color.bcViolet.opacity(0.15))
-                .frame(width: 260, height: 260)
-                .blur(radius: 100)
-                .offset(x: 150, y: 360)
-        }
+        LinearGradient(
+            colors: [
+                Color.bcBackgroundTop,
+                Color.bcBackground,
+                Color.bcBackgroundBottom
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
         .ignoresSafeArea()
     }
 }
 
 private extension Color {
-    static let bcInk = Color(red: 0.94, green: 0.97, blue: 0.98)
-    static let bcSoft = Color(red: 0.74, green: 0.79, blue: 0.84)
-    static let bcMuted = Color(red: 0.52, green: 0.57, blue: 0.64)
-    static let bcMint = Color(red: 0.47, green: 0.92, blue: 0.73)
-    static let bcBlue = Color(red: 0.31, green: 0.72, blue: 1.0)
-    static let bcAmber = Color(red: 1.0, green: 0.72, blue: 0.42)
-    static let bcViolet = Color(red: 0.67, green: 0.58, blue: 1.0)
+    static let bcBackground = Color(red: 0.035, green: 0.048, blue: 0.052)
+    static let bcBackgroundTop = Color(red: 0.055, green: 0.078, blue: 0.071)
+    static let bcBackgroundBottom = Color(red: 0.025, green: 0.032, blue: 0.042)
+    static let bcCard = Color(red: 0.105, green: 0.122, blue: 0.125)
+    static let bcStroke = Color.white.opacity(0.13)
+    static let bcInk = Color(red: 0.94, green: 0.965, blue: 0.955)
+    static let bcSoft = Color(red: 0.72, green: 0.77, blue: 0.79)
+    static let bcMuted = Color(red: 0.49, green: 0.54, blue: 0.58)
+    static let bcMint = Color(red: 0.55, green: 0.91, blue: 0.72)
+    static let bcBlue = Color(red: 0.43, green: 0.68, blue: 0.92)
+    static let bcAmber = Color(red: 0.96, green: 0.68, blue: 0.39)
+    static let bcViolet = Color(red: 0.62, green: 0.56, blue: 0.86)
 }
 
 private extension String {

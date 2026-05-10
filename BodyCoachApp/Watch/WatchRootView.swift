@@ -23,7 +23,7 @@ private struct WatchDashboardPage: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 9) {
+            LazyVStack(alignment: .leading, spacing: 9) {
                 WatchTopBar(status: payload.status.displayName, syncLabel: store.syncStatusLabel)
 
                 WatchStatusCard(
@@ -393,10 +393,10 @@ private struct WatchCard<Content: View>: View {
             .padding(padding)
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color.white.opacity(0.08))
+                    .fill(Color.watchCard)
                     .overlay {
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                            .stroke(Color.watchStroke, lineWidth: 1)
                     }
             }
     }
@@ -406,9 +406,9 @@ private struct WatchBackground: View {
     var body: some View {
         LinearGradient(
             colors: [
-                Color(red: 0.01, green: 0.02, blue: 0.02),
-                Color(red: 0.02, green: 0.03, blue: 0.04),
-                Color(red: 0.02, green: 0.02, blue: 0.03)
+                Color.watchBackgroundTop,
+                Color.watchBackground,
+                Color.watchBackgroundBottom
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -418,13 +418,18 @@ private struct WatchBackground: View {
 }
 
 private extension Color {
-    static let watchSoft = Color(red: 0.72, green: 0.78, blue: 0.84)
-    static let watchMuted = Color(red: 0.42, green: 0.47, blue: 0.52)
-    static let watchMint = Color(red: 0.47, green: 0.92, blue: 0.73)
-    static let watchBlue = Color(red: 0.31, green: 0.72, blue: 1.0)
-    static let watchAmber = Color(red: 1.0, green: 0.72, blue: 0.42)
-    static let watchViolet = Color(red: 0.67, green: 0.58, blue: 1.0)
-    static let watchRose = Color(red: 1.0, green: 0.35, blue: 0.48)
+    static let watchBackground = Color(red: 0.03, green: 0.044, blue: 0.048)
+    static let watchBackgroundTop = Color(red: 0.048, green: 0.068, blue: 0.063)
+    static let watchBackgroundBottom = Color(red: 0.018, green: 0.026, blue: 0.034)
+    static let watchCard = Color(red: 0.1, green: 0.116, blue: 0.12)
+    static let watchStroke = Color.white.opacity(0.13)
+    static let watchSoft = Color(red: 0.72, green: 0.77, blue: 0.79)
+    static let watchMuted = Color(red: 0.49, green: 0.54, blue: 0.58)
+    static let watchMint = Color(red: 0.55, green: 0.91, blue: 0.72)
+    static let watchBlue = Color(red: 0.43, green: 0.68, blue: 0.92)
+    static let watchAmber = Color(red: 0.96, green: 0.68, blue: 0.39)
+    static let watchViolet = Color(red: 0.62, green: 0.56, blue: 0.86)
+    static let watchRose = Color(red: 0.96, green: 0.42, blue: 0.5)
 }
 
 #Preview {
