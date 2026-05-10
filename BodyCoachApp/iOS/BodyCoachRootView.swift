@@ -1096,7 +1096,7 @@ private struct SettingsPrivacyView: View {
                         SettingsInfoRow(
                             iconName: "doc.text.fill",
                             title: "App 内政策摘要",
-                            detail: "隐私政策 URL 已接入 App。提交前需要确认 GitHub Pages 或正式站点可公网访问，并与 App Store Connect 填写一致。"
+                            detail: "隐私政策、支持页和营销页已接入 GitHub Pages。提交前需要确认三条 URL 都可公网访问，并与 App Store Connect 填写一致。"
                         )
                         SettingsInfoRow(
                             iconName: "checklist.checked",
@@ -1115,6 +1115,20 @@ private struct SettingsPrivacyView: View {
                                 }
                                 .font(.subheadline.weight(.bold))
                                 .foregroundStyle(Color.bcMint)
+                                .padding(.vertical, 4)
+                            }
+                        }
+
+                        if let url = AppPrivacyLinks.supportURL {
+                            Link(destination: url) {
+                                HStack {
+                                    Image(systemName: "questionmark.circle.fill")
+                                    Text("打开支持页面")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                }
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(Color.bcBlue)
                                 .padding(.vertical, 4)
                             }
                         }
@@ -1373,7 +1387,7 @@ private struct SettingsPrivacyView: View {
     }
 
     private var appStoreReadinessText: String {
-        "已具备 AppIcon、HealthKit 权限说明、Privacy Manifest、隐私政策链接和非医疗说明。提交前仍需真机截图、正式 Bundle ID / Team、App Store 隐私营养标签与支持联系方式。"
+        "已具备 AppIcon、HealthKit 权限说明、Privacy Manifest、隐私政策、支持页、营销页和非医疗说明。提交前仍需真机截图、正式 Bundle ID / Team 与 App Store 隐私营养标签。"
     }
 
     private var header: some View {

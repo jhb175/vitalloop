@@ -8,10 +8,18 @@ Expected privacy policy URL after GitHub Pages is enabled:
 https://jhb175.github.io/vitalloop/privacy-policy.html
 ```
 
+Expected marketing and support URLs:
+
+```text
+https://jhb175.github.io/vitalloop/
+https://jhb175.github.io/vitalloop/support.html
+```
+
 If your GitHub username or repository name is different, update:
 
 - `site/README.md`
 - `BodyCoachApp/Shared/AppPrivacyLinks.swift`
+- `docs/app-store-release-checklist.md`
 - App Store Connect Privacy Policy URL
 
 ## GitHub Pages Setup
@@ -28,4 +36,4 @@ Current app privacy policy URL:
 https://jhb175.github.io/vitalloop/privacy-policy.html
 ```
 
-Use the same URL in App Store Connect before submission.
+Use the same support, marketing, and privacy URLs in App Store Connect before submission.

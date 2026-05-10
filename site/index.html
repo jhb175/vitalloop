@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VitalLoop</title>
+  <meta name="description" content="VitalLoop turns Apple Health summaries and Apple Watch check-ins into local daily body status guidance.">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #07100f;
+      --panel: rgba(255, 255, 255, 0.08);
+      --text: #edf7f5;
+      --muted: #b6c4c2;
+      --line: rgba(255, 255, 255, 0.14);
+      --accent: #78eab9;
+      --blue: #5fb7ff;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 18% 8%, rgba(120, 234, 185, 0.2), transparent 28%),
+        radial-gradient(circle at 82% 12%, rgba(80, 180, 255, 0.16), transparent 26%),
+        var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+
+    main {
+      box-sizing: border-box;
+      width: min(960px, 100%);
+      margin: 0 auto;
+      padding: 56px 22px 72px;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    nav a, .button {
+      color: var(--accent);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      max-width: 780px;
+      margin: 0 0 16px;
+      font-size: clamp(42px, 8vw, 76px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 24px;
+    }
+
+    p, li {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .hero {
+      margin-bottom: 42px;
+    }
+
+    .hero-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(160px, 240px);
+      gap: 28px;
+      align-items: center;
+    }
+
+    .hero p {
+      max-width: 700px;
+      font-size: 19px;
+    }
+
+    .app-icon {
+      width: min(240px, 42vw);
+      border-radius: 28%;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(18px);
+    }
+
+    .tag {
+      display: inline-block;
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    footer {
+      margin-top: 38px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .hero-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav>
+      <strong>VitalLoop</strong>
+      <div class="links">
+        <a href="support.html">Support</a>
+        <a href="privacy-policy.html">Privacy</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="hero-layout">
+        <div>
+          <h1>Daily body status for iPhone and Apple Watch.</h1>
+          <p>
+            VitalLoop turns Apple Health summaries and quick Apple Watch check-ins into local, explainable daily guidance for habits, recovery, body weight trends, and routine planning.
+          </p>
+          <a class="button" href="support.html">Get support</a>
+        </div>
+        <img class="app-icon" src="assets/vitalloop-app-icon.png" alt="VitalLoop app icon">
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <span class="tag">Local first</span>
+        <h2>Health summaries stay on device</h2>
+        <p>VitalLoop reads permitted Apple Health summaries and stores app records locally for status, trends, reminders, and reviews.</p>
+      </article>
+      <article class="card">
+        <span class="tag">Watch check-ins</span>
+        <h2>Fast subjective logging</h2>
+        <p>Apple Watch quick logs for stress, fatigue, and hunger help explain what body sensors cannot see.</p>
+      </article>
+      <article class="card">
+        <span class="tag">Lifestyle reference</span>
+        <h2>Not medical advice</h2>
+        <p>Scores and suggestions are for habit planning and lifestyle reference only, not diagnosis or treatment.</p>
+      </article>
+    </section>
+
+    <footer>
+      <p>VitalLoop is not a medical device and does not provide medical diagnosis, treatment, or professional health advice.</p>
+    </footer>
+  </main>
+</body>
+</html>

@@ -162,8 +162,10 @@ Apple Watch 真机同步验收可按 `docs/real-device-watch-sync-checklist.md` 
 - iPhone target 已配置 HealthKit entitlement。
 - `PrivacyInfo.xcprivacy` 已加入 iPhone app bundle，声明不追踪、不收集 manifest 数据类型，并声明 UserDefaults required reason API 用于保存 App 内提醒设置。
 - 隐私政策静态页位于 `site/privacy-policy.html`，App 内设置页已接入预期 GitHub Pages URL。
+- 支持页和营销首页位于 `site/support.html` 与 `site/index.html`，App Store Connect 可分别填写为 Support URL 与 Marketing URL。
 - App 内设置页已显示上架材料状态，明确 AppIcon、HealthKit、Privacy Manifest、隐私政策链接和非医疗说明是否已覆盖。
 - App Store 元数据、权限文案、隐私营养标签提示和截图清单已整理在 `docs/app-store-release-checklist.md`。
+- 截图顺序、官方规格参考和审核前检查已整理在 `docs/app-store-screenshot-plan.md`。
 - Beta 预检脚本 `scripts/beta-preflight.sh` 已加入，CI 会先做元数据预检，再运行完整测试和双端构建。
 
 提交 App Store Connect 前仍需要人工完成：

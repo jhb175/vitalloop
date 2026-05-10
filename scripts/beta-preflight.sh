@@ -181,7 +181,9 @@ command -v xcodebuild >/dev/null 2>&1 || fail "xcodebuild is not available"
 require_file "$ROOT_DIR/BodyCoachApp/PrivacyInfo.xcprivacy"
 require_file "$ROOT_DIR/BodyCoachApp/BodyCoachApp.entitlements"
 require_file "$ROOT_DIR/BodyCoachApp/Shared/AppPrivacyLinks.swift"
+require_file "$ROOT_DIR/site/index.html"
 require_file "$ROOT_DIR/site/privacy-policy.html"
+require_file "$ROOT_DIR/site/support.html"
 require_file "$EXPORT_OPTIONS_PLIST"
 
 tmp_dir="$(mktemp -d)"
@@ -200,7 +202,9 @@ app_build_number="$(setting_value CURRENT_PROJECT_VERSION "$app_settings")"
 watch_build_number="$(setting_value CURRENT_PROJECT_VERSION "$watch_settings")"
 app_team="$(setting_value DEVELOPMENT_TEAM "$app_settings")"
 watch_team="$(setting_value DEVELOPMENT_TEAM "$watch_settings")"
+marketing_url="$(awk -F\" '/marketingURL/ { print $2; exit }' "$ROOT_DIR/BodyCoachApp/Shared/AppPrivacyLinks.swift")"
 privacy_url="$(awk -F\" '/privacyPolicyURL/ { print $2; exit }' "$ROOT_DIR/BodyCoachApp/Shared/AppPrivacyLinks.swift")"
+support_url="$(awk -F\" '/supportURL/ { print $2; exit }' "$ROOT_DIR/BodyCoachApp/Shared/AppPrivacyLinks.swift")"
 export_method="$(/usr/libexec/PlistBuddy -c "Print :method" "$EXPORT_OPTIONS_PLIST" 2>/dev/null || true)"
 export_team="$(/usr/libexec/PlistBuddy -c "Print :teamID" "$EXPORT_OPTIONS_PLIST" 2>/dev/null || true)"
 
@@ -221,16 +225,36 @@ case "$privacy_url" in
     ;;
 esac
 
+case "$marketing_url" in
+  https://*)
+    ;;
+  *)
+    fail "Marketing URL must be an https URL"
+    ;;
+esac
+
+case "$support_url" in
+  https://*)
+    ;;
+  *)
+    fail "Support URL must be an https URL"
+    ;;
+esac
+
 grep -q "NSPrivacyTracking" "$ROOT_DIR/BodyCoachApp/PrivacyInfo.xcprivacy" || fail "Privacy manifest is missing NSPrivacyTracking"
 grep -q "NSPrivacyAccessedAPICategoryUserDefaults" "$ROOT_DIR/BodyCoachApp/PrivacyInfo.xcprivacy" || fail "Privacy manifest is missing UserDefaults required reason API"
 grep -q "com.apple.developer.healthkit" "$ROOT_DIR/BodyCoachApp/BodyCoachApp.entitlements" || fail "HealthKit entitlement is missing"
 grep -q "VitalLoop is not a medical device" "$ROOT_DIR/site/privacy-policy.html" || fail "Privacy policy is missing medical disclaimer"
+grep -q "VitalLoop is not a medical device" "$ROOT_DIR/site/index.html" || fail "Marketing page is missing medical disclaimer"
+grep -q "github.com/jhb175/vitalloop/issues" "$ROOT_DIR/site/support.html" || fail "Support page is missing GitHub Issues support link"
 [ "$export_method" = "app-store-connect" ] || fail "TestFlight export method must be app-store-connect"
 
 print_check "iPhone bundle id: $app_bundle_id"
 print_check "Watch bundle id: $watch_bundle_id"
 print_check "Version: $app_marketing_version ($app_build_number)"
+print_check "Marketing URL: $marketing_url"
 print_check "Privacy policy URL: $privacy_url"
+print_check "Support URL: $support_url"
 print_check "Privacy manifest and HealthKit entitlement are present"
 
 if [ -z "$app_team" ] || [ -z "$watch_team" ]; then

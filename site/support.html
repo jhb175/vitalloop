@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VitalLoop Support</title>
+  <meta name="description" content="Support information for VitalLoop on iPhone and Apple Watch.">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #07100f;
+      --panel: rgba(255, 255, 255, 0.08);
+      --text: #edf7f5;
+      --muted: #b6c4c2;
+      --line: rgba(255, 255, 255, 0.14);
+      --accent: #78eab9;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 18% 8%, rgba(120, 234, 185, 0.2), transparent 28%),
+        radial-gradient(circle at 82% 12%, rgba(80, 180, 255, 0.16), transparent 26%),
+        var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+
+    main {
+      box-sizing: border-box;
+      width: min(860px, 100%);
+      margin: 0 auto;
+      padding: 56px 22px 72px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(34px, 8vw, 56px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 32px 0 10px;
+      font-size: 22px;
+    }
+
+    p, li {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    a {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(18px);
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    footer {
+      margin-top: 38px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p><a href="index.html">VitalLoop</a></p>
+      <h1>Support</h1>
+      <p>Help for VitalLoop on iPhone and Apple Watch.</p>
+    </header>
+
+    <section class="card">
+      <p>
+        For beta feedback or support requests, use the GitHub issue tracker:
+        <a href="https://github.com/jhb175/vitalloop/issues">github.com/jhb175/vitalloop/issues</a>
+      </p>
+      <p>
+        For TestFlight feedback, use the structured beta form:
+        <a href="https://github.com/jhb175/vitalloop/issues/new?template=beta-feedback.yml">submit beta feedback</a>.
+      </p>
+    </section>
+
+    <h2>Before Contacting Support</h2>
+    <ul>
+      <li>Confirm the iPhone and Apple Watch apps are from the same TestFlight build.</li>
+      <li>Open both apps once if Apple Watch sync has not started.</li>
+      <li>Check iPhone Settings in VitalLoop for HealthKit and Watch sync diagnostics.</li>
+      <li>Do not attach raw HealthKit exports or sensitive health records.</li>
+    </ul>
+
+    <h2>Health And Safety</h2>
+    <p>
+      VitalLoop is not a medical device. Scores and suggestions are for lifestyle reference only and do not provide medical diagnosis, treatment, or professional health advice.
+    </p>
+
+    <footer>
+      <p><a href="privacy-policy.html">Privacy Policy</a></p>
+    </footer>
+  </main>
+</body>
+</html>
